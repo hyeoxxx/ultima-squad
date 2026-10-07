@@ -42,6 +42,11 @@
         const m = b.mercs[e.cls];
         if (!sk || !m) continue;
         (anim[e.cls] = anim[e.cls] || {}).atk = performance.now();
+        if (spawnSkillFx(e, m)) {
+          if (sk.fx === 'ult') flash = { name: sk.name, color: sk.color, life: 1.0, icon: sk.icon, soft: true };
+          if (sk.type !== 'basic') fx.push({ type: 'label', color: '#fff', from: [m.x, GROUND - 40], pos: [], life: 0.7, max: 0.7, cls: e.cls, name: sk.name, icon: sk.icon });
+          continue;
+        }
         if (sk.fx === 'ult') flash = { name: sk.name, color: sk.color, life: 1.4, icon: sk.icon };
         fx.push({ type: sk.fx || (sk.type === 'basic' ? 'basic' : sk.type), color: sk.color || '#fff', from: [m.x, GROUND - 40], pos: e.pos || [], life: sk.fx === 'ult' ? 1.2 : sk.spread ? sk.spread : 0.35, max: sk.fx === 'ult' ? 1.2 : sk.spread ? sk.spread : 0.35, cls: e.cls, name: sk.type !== 'basic' ? sk.name : null, icon: sk.icon });
       } else if (e.t === 'levelup') {
@@ -51,6 +56,52 @@
     }
     if (floats.length > 70) floats.splice(0, floats.length - 70);
     if (fx.length > 60) fx.splice(0, fx.length - 60);
+  }
+
+  // ───────── 원작 스킬 이펙트 ─────────
+  const sfx = [];
+  const total = (fr) => fr.reduce((a, f) => a + (f.d || 90), 0);
+  function spawnSkillFx(e, m) {
+    const meta = A.skillMeta[e.skill];
+    if (!meta || !(meta.effect || meta.hit || meta.ball)) return false;
+    A.preloadSkill(e.skill);
+    const now = performance.now();
+    if (meta.effect) sfx.push({ k: e.skill, kind: 'effect', x: m.x, y: GROUND, start: now, flip: true });
+    (e.pos || []).forEach(([px, py], i) => {
+      const ty = GROUND - (py || 0) * 26;
+      if (meta.ball) {
+        sfx.push({ k: e.skill, kind: 'ball', x: m.x + 20, y: GROUND - 40, tx: px, ty: ty - 35, start: now + i * 25, dur: 220, flip: true });
+        if (meta.hit) sfx.push({ k: e.skill, kind: 'hit', x: px, y: ty - 30, start: now + 220 + i * 25, flip: true });
+      } else if (meta.hit) sfx.push({ k: e.skill, kind: 'hit', x: px, y: ty - 30, start: now + 60 + i * 30, flip: true });
+    });
+    if (sfx.length > 80) sfx.splice(0, sfx.length - 80);
+    return true;
+  }
+  function drawSkillFx(ctx) {
+    const now = performance.now();
+    for (let i = sfx.length - 1; i >= 0; i--) {
+      const f = sfx[i];
+      const el = now - f.start;
+      if (el < 0) continue;
+      const meta = A.skillMeta[f.k], frames = meta && meta[f.kind];
+      if (!frames) { sfx.splice(i, 1); continue; }
+      let x = f.x, y = f.y, idx;
+      if (f.kind === 'ball') {
+        if (el > f.dur) { sfx.splice(i, 1); continue; }
+        const k = el / f.dur; x = f.x + (f.tx - f.x) * k; y = f.y + (f.ty - f.y) * k;
+        idx = pickFrame(frames, el, true);
+      } else {
+        if (el > total(frames)) { sfx.splice(i, 1); continue; }
+        idx = pickFrame(frames, el, false);
+      }
+      const im = A.skill(f.k, f.kind, idx), fr = frames[idx];
+      if (!im) continue;
+      ctx.save();
+      ctx.translate(x, y);
+      if (f.flip) ctx.scale(-1, 1);
+      ctx.drawImage(im, -fr.ox, -fr.oy);
+      ctx.restore();
+    }
   }
 
   function bg(ctx, info) {
@@ -297,7 +348,7 @@
     if (flash.life <= 0) { flash = null; return; }
     const k = flash.life / 1.4;
     ctx.save();
-    ctx.globalAlpha = Math.min(0.45, k * 0.6); ctx.fillStyle = flash.color; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = Math.min(flash.soft ? 0.15 : 0.45, k * 0.6); ctx.fillStyle = flash.color; ctx.fillRect(0, 0, W, H);
     ctx.globalAlpha = Math.min(1, k * 2);
     ctx.font = '900 34px "Malgun Gothic",sans-serif'; ctx.textAlign = 'center';
     ctx.lineWidth = 6; ctx.strokeStyle = '#000a';
@@ -310,6 +361,7 @@
     if (b !== lastBattle && A.ready) {
       lastBattle = b;
       for (const k of ['mob', 'boss']) if (b.info.mons[k]) A.preloadMob(b.info.mons[k][2]);
+      for (const c of Object.keys(b.mercs)) { A.preloadSkill(G.USData.BASIC[c]); st.mercs[c].skills.forEach((id) => id && A.preloadSkill(id)); }
     }
     const t = now / 1000;
     const dt = last ? Math.min(0.1, t - last) : 0.016;
@@ -321,11 +373,12 @@
     for (const m of b.monsters) drawMonster(ctx, b, m, t);
     for (const c of ['mage', 'arch', 'war']) if (b.mercs[c]) drawMerc(ctx, st, b, b.mercs[c], t);
     drawFx(ctx, dt);
+    drawSkillFx(ctx);
     drawFloats(ctx, dt);
     drawBossBar(ctx, b);
     drawFlash(ctx, dt);
   }
-  function clearFx() { floats.length = 0; fx.length = 0; corpses.length = 0; flash = null; }
+  function clearFx() { floats.length = 0; fx.length = 0; corpses.length = 0; sfx.length = 0; flash = null; }
 
   G.USRender = { render, pushEvents, clearFx, AVATAR, WEAPON_ICON, avatarStage };
 })(window);

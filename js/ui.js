@@ -2,6 +2,7 @@
 (function (G) {
   'use strict';
   const D = G.USData, US = G.US, RD = G.USRender, AS = G.USAssets;
+  const skIcon = (sk) => `<img class="skic" src="${AS.skillIcon(sk.id)}" alt="${sk.icon}">`;
   const icon = (it) => `<img class="ic" src="${AS.iconSrc(it)}" alt="${SLOT_ICON[it.slot]}" loading="lazy">`;
   const avatarImg = (c, m) => `<img class="av" src="${AS.charSrc(c, RD.avatarStage(m.lv), m.equip.weapon ? m.equip.weapon.tier : 0, 'stand', 0)}" alt="${RD.AVATAR[c][RD.avatarStage(m.lv)]}">`;
   const $ = (id) => document.getElementById(id);
@@ -92,13 +93,13 @@
           const locked = i >= slots;
           const sel = ui.skillSel && ui.skillSel[0] === c && ui.skillSel[1] === i;
           if (locked) return `<div class="sslot locked">🔒 ${i === 1 ? '1-10' : '2-10'} 클리어 후 확장</div>`;
-          return `<div class="sslot ${id ? 'filled' : ''} ${sel ? 'sel' : ''}" data-sslot="${c}:${i}">${id ? `${D.SKILLS[id].icon} ${D.SKILLS[id].name}` : '비어 있음'}</div>`;
+          return `<div class="sslot ${id ? 'filled' : ''} ${sel ? 'sel' : ''}" data-sslot="${c}:${i}">${id ? `${skIcon(D.SKILLS[id])} ${D.SKILLS[id].name}` : '비어 있음'}</div>`;
         }).join('')}</div>
         <div class="sklist">${learned.map((sk) => {
           const ok = m.lv >= sk.lv;
           const on = m.skills.slice(0, slots).includes(sk.id);
           const cd = sk.cd ? `${US.skillCd(sk, s.cdr).toFixed(1).replace('.0', '')}초` : sk.type === 'passive' ? '상시' : sk.type === 'trigger' ? '조건 발동' : sk.type === 'basic' ? '기본 공격 대체' : '';
-          return `<div class="sk ${ok ? '' : 'locked'} ${on ? 'on' : ''}" data-skill="${c}:${sk.id}" title="${esc(sk.desc)}">${sk.icon} ${sk.name}<small>${ok ? cd : `Lv.${sk.lv} 습득`}</small></div>`;
+          return `<div class="sk ${ok ? '' : 'locked'} ${on ? 'on' : ''}" data-skill="${c}:${sk.id}" title="${esc(sk.desc)}">${skIcon(sk)} ${sk.name}<small>${ok ? cd : `Lv.${sk.lv} 습득`}</small></div>`;
         }).join('')}</div>
       </div>`;
     }).join('')}</div>

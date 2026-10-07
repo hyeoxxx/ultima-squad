@@ -155,3 +155,7 @@ table.t th { color: var(--muted); font-weight: 600; font-size: 12px; }
 .detail .ic { width: 40px; height: 40px; }
 .avatar { overflow: hidden; }
 .av { max-width: 120%; max-height: 120%; transform: scaleX(-1); image-rendering: pixelated; }
+
+.skic { width: 26px; height: 26px; vertical-align: middle; image-rendering: pixelated; flex: none; }
+.sk { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.sk small { width: 100%; }
