@@ -246,7 +246,8 @@
     // 포탈: 반복 중이고 다음 스테이지로 갈 수 있을 때
     const next = st.stage + 1;
     const portal = st.repeat && next < 30 && US.isCleared(st, st.mode, st.stage) && US.canEnter(st, st.mode, next);
-    $('btnPortal').hidden = !portal;
+    $('btnPortal').hidden = true; // 포탈은 필드에 그린다
+    RD.portalOn = portal;
   }
 
   let lastHud = 0;
@@ -413,6 +414,19 @@
     const r = US.summonBox(st, battle, Date.now());
     if (!r.ok) UI.toast(r.why); else save();
   });
+  // 필드 포탈 클릭
+  function canvasPoint(e) {
+    const cv = $('cv'), r = cv.getBoundingClientRect();
+    // object-fit: cover (PIP) 도 고려해서 캔버스 좌표로 변환
+    const scale = Math.max(r.width / cv.width, r.height / cv.height);
+    const ox = (r.width - cv.width * scale) / 2, oy = (r.height - cv.height * scale) / 2;
+    const fit = getComputedStyle(cv).objectFit === 'cover';
+    const sx = fit ? scale : r.width / cv.width, sy = fit ? scale : r.height / cv.height;
+    return { x: (e.clientX - r.left - (fit ? ox : 0)) / sx, y: (e.clientY - r.top - (fit ? oy : 0)) / sy };
+  }
+  const onPortal = (p) => { const q = RD.portalRect; return RD.portalOn && q && p.x >= q.x && p.x <= q.x + q.w && p.y >= q.y && p.y <= q.y + q.h; };
+  $('cv').addEventListener('click', (e) => { if (onPortal(canvasPoint(e))) $('btnPortal').click(); });
+  $('cv').addEventListener('mousemove', (e) => { $('cv').style.cursor = onPortal(canvasPoint(e)) ? 'pointer' : ''; });
   $('btnPortal').addEventListener('click', () => { st.stage++; st.repeat = false; st.repeatReason = null; save(); startBattle(); UI.markDirty(); });
   $('btnRepeat').addEventListener('click', () => { st.repeat = !st.repeat; st.repeatReason = null; save(); UI.markDirty(); });
   $('btnBag').addEventListener('click', () => { UI.ui.tab = 'inv'; UI.render(); $('manage').scrollIntoView({ behavior: 'smooth' }); });

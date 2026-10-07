@@ -164,6 +164,29 @@
     if (picked && G.USRender.onPickup) G.USRender.onPickup(picked);
   }
 
+  // ───────── 필드 포탈 (다음 스테이지) ─────────
+  const PORTAL_X = 945;
+  let portalMeta = null;
+  fetch('assets/icons/portal.json').then((r) => r.json()).then((m) => { portalMeta = m; m.forEach((_, i) => A.img(`assets/icons/portal_${i}.png`)); }).catch(() => {});
+  function drawPortal(ctx) {
+    const R = G.USRender;
+    R.portalRect = null;
+    if (!R.portalOn || !portalMeta) return;
+    const now = performance.now();
+    const total = portalMeta.reduce((a, f) => a + f.d, 0);
+    let t = now % total, i = 0;
+    while (t >= portalMeta[i].d) { t -= portalMeta[i].d; i++; }
+    const f = portalMeta[i], im = A.img(`assets/icons/portal_${i}.png`);
+    const feet = GROUND + 4;
+    if (im) ctx.drawImage(im, PORTAL_X - f.ox, feet - f.oy);
+    R.portalRect = { x: PORTAL_X - 45, y: feet - 130, w: 90, h: 130 };
+    ctx.save();
+    ctx.font = '700 13px "Maplestory","Malgun Gothic",sans-serif'; ctx.textAlign = 'center';
+    ctx.lineWidth = 3; ctx.strokeStyle = '#000a'; ctx.strokeText('다음 스테이지', PORTAL_X, feet - 136);
+    ctx.fillStyle = '#fde68a'; ctx.fillText('다음 스테이지', PORTAL_X, feet - 136);
+    ctx.restore();
+  }
+
   function bg(ctx, info) {
     const pic = A.bg(info.r, G.USData.mapIndex(info.s));
     if (pic) {
@@ -460,6 +483,7 @@
     ctx.imageSmoothingEnabled = false;
     bg(ctx, b.info);
     ctx.imageSmoothingEnabled = false;
+    drawPortal(ctx);
     drawCorpses(ctx);
     drawDrops(ctx, b, dt);
     for (const m of b.monsters) drawMonster(ctx, b, m, t);
