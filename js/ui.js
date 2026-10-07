@@ -1,7 +1,9 @@
 // 용병 관리 UI (탭 패널)
 (function (G) {
   'use strict';
-  const D = G.USData, US = G.US, RD = G.USRender;
+  const D = G.USData, US = G.US, RD = G.USRender, AS = G.USAssets;
+  const icon = (it) => `<img class="ic" src="${AS.iconSrc(it)}" alt="${SLOT_ICON[it.slot]}" loading="lazy">`;
+  const avatarImg = (c, m) => `<img class="av" src="${AS.charSrc(c, RD.avatarStage(m.lv), m.equip.weapon ? m.equip.weapon.tier : 0, 'stand', 0)}" alt="${RD.AVATAR[c][RD.avatarStage(m.lv)]}">`;
   const $ = (id) => document.getElementById(id);
   const fmt = US.fmt;
   const SLOT_ICON = { weapon: '⚔️', hat: '🎩', glove: '🧤', shoe: '👢' };
@@ -25,7 +27,7 @@
   function itemCell(it, extra = '') {
     const g = gradeOf(it);
     return `<div class="item ${g ? 'g-' + g : ''} ${extra}" data-item="${it.id}" title="${esc(US.itemName(it))}">
-      <span class="tier">${it.tier}</span>${SLOT_ICON[it.slot]}<span class="cls">${CLS_ICON[it.cls]}</span>
+      <span class="tier">${it.tier}</span>${icon(it)}<span class="cls">${CLS_ICON[it.cls]}</span>
       ${it.isNew ? '<span class="new"></span>' : ''}${it.lock ? '<span class="lock">🔒</span>' : ''}</div>`;
   }
   function potLines(it) {
@@ -47,7 +49,7 @@
           (it.slot === 'weapon' ? `<div class="small">공/마 ${d(it.atk, cur.atk)}</div>` : `<div class="small">HP ${d(it.hp, cur.hp)} · 방어력 ${d(it.def, cur.def)}</div>`);
       } else if (!cur) cmp = '<div class="small muted">착용 중인 장비 없음</div>';
     }
-    return `<div class="name">${esc(US.itemName(it))}</div>
+    return `<div class="row">${icon(it)}<div class="name">${esc(US.itemName(it))}</div></div>
       <div class="small muted">${D.CLASS_NAME[it.cls]} ${D.SLOT_NAME[it.slot]} · ${it.tier}단계 · ${D.QUALITY_NAME[it.q]} · Lv.${T.req} 이상</div>
       <div style="margin-top:6px">${base}</div>
       <div class="pot">${potLines(it)}</div>${cmp}`;
@@ -73,7 +75,7 @@
       const pct = m.lv >= D.MAX_LEVEL ? 100 : (m.exp / US.expNeed(m.lv) * 100);
       const learned = D.SKILL_LIST(c);
       return `<div class="merc">
-        <div class="merc-head"><div class="avatar t${stage}">${RD.AVATAR[c][stage]}</div>
+        <div class="merc-head"><div class="avatar t${stage}">${avatarImg(c, m)}</div>
           <div style="flex:1"><b>${D.CLASS_NAME[c]}</b> <span class="muted">Lv.${m.lv}${m.lv >= D.MAX_LEVEL ? ' (MAX)' : ''}</span>
           <div class="lvbar"><div style="width:${pct.toFixed(1)}%"></div></div><div class="small muted">EXP ${pct.toFixed(2)}%</div></div></div>
         <div class="stats">
@@ -83,7 +85,7 @@
           <div><span>재사용 감소</span><b>${s.cdr}초</b></div><div><span>피해 감소</span><b>${(Math.min(0.9, s.def * 0.0001) * 100).toFixed(1)}%</b></div>
         </div>
         <div class="small muted">장비</div>
-        <div class="equip">${D.SLOTS.map((sl) => { const it = m.equip[sl]; return it ? `<div class="eslot ${gradeOf(it) ? 'g-' + gradeOf(it) : ''}" data-eq="${c}:${sl}" title="${esc(US.itemName(it))}"><span class="tier">${it.tier}</span>${SLOT_ICON[sl]}</div>` : `<div class="eslot empty" data-eq="${c}:${sl}">${D.SLOT_NAME[sl]}</div>`; }).join('')}</div>
+        <div class="equip">${D.SLOTS.map((sl) => { const it = m.equip[sl]; return it ? `<div class="eslot ${gradeOf(it) ? 'g-' + gradeOf(it) : ''}" data-eq="${c}:${sl}" title="${esc(US.itemName(it))}"><span class="tier">${it.tier}</span>${icon(it)}</div>` : `<div class="eslot empty" data-eq="${c}:${sl}">${D.SLOT_NAME[sl]}</div>`; }).join('')}</div>
         <div class="small muted">스킬 슬롯 <span class="small">(슬롯을 고른 뒤 아래 스킬을 누르세요 · 앞 슬롯부터 사용)</span></div>
         <div class="skills">${[0, 1, 2].map((i) => {
           const id = m.skills[i];

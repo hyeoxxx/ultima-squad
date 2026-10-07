@@ -150,3 +150,8 @@ table.t th { color: var(--muted); font-weight: 600; font-size: 12px; }
 .foot { text-align: center; color: var(--muted); font-size: 12px; padding: 4px 16px 20px; }
 .foot a { color: var(--accent2); }
 @keyframes glow { from { box-shadow: 0 0 6px #38bdf8; } to { box-shadow: 0 0 18px #38bdf8; } }
+
+.ic { width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; pointer-events: none; }
+.detail .ic { width: 40px; height: 40px; }
+.avatar { overflow: hidden; }
+.av { max-width: 120%; max-height: 120%; transform: scaleX(-1); image-rendering: pixelated; }

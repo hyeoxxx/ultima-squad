@@ -254,7 +254,7 @@
   function spawnWave(b) {
     const n = Math.min(R.waveSize, R.mobsPerStage - b.spawned);
     for (let i = 0; i < n; i++) {
-      b.monsters.push({ id: b.nextMonId++, kind: 'mob', hp: b.mon.hp, maxHp: b.mon.hp, atk: b.mon.atk, x: 1000 + i * 45 + rand() * 20, y: rand(), next: 1 + rand(), stunUntil: 0, name: b.info.mons.mob[0], icon: b.info.mons.mob[1] });
+      b.monsters.push({ id: b.nextMonId++, kind: 'mob', hp: b.mon.hp, maxHp: b.mon.hp, atk: b.mon.atk, x: 1000 + i * 45 + rand() * 20, y: rand(), next: 1 + rand(), stunUntil: 0, name: b.info.mons.mob[0], icon: b.info.mons.mob[1], mob: b.info.mons.mob[2] });
       b.spawned++;
     }
   }
@@ -262,7 +262,7 @@
     const mons = b.info.mons;
     const boss = {
       id: b.nextMonId++, kind: stageBoss ? 'regionBoss' : 'boss', x: 1000, y: 0.5, next: 1.5, stunUntil: 0,
-      name: mons.boss[0], icon: mons.boss[1],
+      name: mons.boss[0], icon: mons.boss[1], mob: mons.boss[2],
     };
     if (stageBoss) {
       boss.hp = boss.maxHp = b.mon.bossHp;
@@ -409,6 +409,7 @@
   }
 
   function onKill(st, b, mon) {
+    b.events.push({ t: 'kill', id: mon.id, x: mon.x, y: mon.y, kind: mon.kind, mob: mon.mob });
     b.killed++;
     st.stats.kills++;
     const online = !b.sim;
@@ -543,7 +544,7 @@
     for (const mon of b.monsters) {
       if (mon.kind === 'box') continue;
       if (mon.stunUntil > t) continue;
-      const stopX = (tgt ? tgt.x : 300) + 70 + (mon.kind === 'mob' ? 0 : 30);
+      const stopX = (tgt ? tgt.x : 300) + 70 + (mon.kind === 'mob' ? (mon.id % 5) * 24 : 40);
       if (mon.x > stopX) { mon.x = Math.max(stopX, mon.x - 140 * dt); continue; }
       // 지역 보스 기믹
       if (mon.kind === 'regionBoss') {
@@ -567,6 +568,7 @@
       }
       if (t >= mon.next) {
         mon.next = t + R.monsterAttackInterval * (mon.kind === 'mob' ? 1 : 0.9);
+        mon.atkAt = t;
         if (tgt) { damageMerc(st, b, tgt, mon.atk, 'hit'); if (b.done) return; }
       }
     }

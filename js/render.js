@@ -2,12 +2,17 @@
 (function (G) {
   'use strict';
   const D = G.USData;
-  const W = 1000, H = 400, GROUND = 300;
+  const W = 1000, H = 400, GROUND = 300, S = 1.35; // S: 스프라이트 배율
   const AVATAR = { war: ['🧔', '🤺', '🦸'], arch: ['🧝', '🦹', '🧚'], mage: ['🧙', '🧛', '🧞'] };
   const WEAPON_ICON = { war: '🗡️', arch: '🏹', mage: '🔱' };
   const TIER_COLOR = ['#aaa', '#d1d5db', '#60a5fa', '#60a5fa', '#c084fc', '#c084fc', '#fbbf24', '#4ade80', '#4ade80'];
   const avatarStage = (lv) => (lv >= 40 ? 2 : lv >= 20 ? 1 : 0); // 특정 레벨에서 외형 변경
 
+  const A = G.USAssets;
+  const anim = {};     // 용병별 애니메이션 상태 { atk, hit }
+  const monHit = {};   // 몬스터 피격 시각
+  const corpses = [];  // 사망 애니메이션
+  const lastX = {};    // 몬스터 이동 감지
   const floats = []; // 데미지 숫자
   const fx = [];     // 스킬 이펙트
   let flash = null;  // 극딜기 화면 연출
@@ -19,7 +24,11 @@
       if (e.t === 'dmg') {
         const y = (e.kind === 'mob' ? GROUND - 6 - e.y * 26 : GROUND) - 50 - Math.random() * 20;
         floats.push({ x: e.x + (Math.random() * 30 - 15), y, v: e.v, crit: e.crit, life: 0.9, kind: 'dmg' });
+        monHit[e.id] = performance.now();
+      } else if (e.t === 'kill') {
+        if (e.mob && A.mobMeta[e.mob] && A.mobMeta[e.mob].die) corpses.push({ mob: e.mob, kind: e.kind, x: e.x, y: e.kind === 'mob' ? GROUND - 6 - e.y * 26 : GROUND, start: performance.now() });
       } else if (e.t === 'hurt' || e.t === 'heal') {
+        if (e.t === 'hurt') (anim[e.cls] = anim[e.cls] || {}).hit = performance.now();
         const m = b.mercs[e.cls];
         if (m) floats.push({ x: m.x, y: GROUND - 70, v: e.v, life: 0.9, kind: e.t });
       } else if (e.t === 'miss') {
@@ -32,6 +41,7 @@
         const sk = D.SKILLS[e.skill];
         const m = b.mercs[e.cls];
         if (!sk || !m) continue;
+        (anim[e.cls] = anim[e.cls] || {}).atk = performance.now();
         if (sk.fx === 'ult') flash = { name: sk.name, color: sk.color, life: 1.4, icon: sk.icon };
         fx.push({ type: sk.fx || (sk.type === 'basic' ? 'basic' : sk.type), color: sk.color || '#fff', from: [m.x, GROUND - 40], pos: e.pos || [], life: sk.fx === 'ult' ? 1.2 : sk.spread ? sk.spread : 0.35, max: sk.fx === 'ult' ? 1.2 : sk.spread ? sk.spread : 0.35, cls: e.cls, name: sk.type !== 'basic' ? sk.name : null, icon: sk.icon });
       } else if (e.t === 'levelup') {
@@ -44,6 +54,14 @@
   }
 
   function bg(ctx, info) {
+    const pic = A.bg(info.r, G.USData.mapIndex(info.s));
+    if (pic) {
+      ctx.drawImage(pic, 0, 0, W, H);
+      const g = ctx.createLinearGradient(0, GROUND - 10, 0, H);
+      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.25, 'rgba(0,0,0,.35)'); g.addColorStop(1, 'rgba(0,0,0,.6)');
+      ctx.fillStyle = g; ctx.fillRect(0, GROUND - 10, W, H - GROUND + 10);
+      return;
+    }
     const [a, c, gnd] = info.map.bg;
     const g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, a); g.addColorStop(0.75, c);
@@ -70,6 +88,15 @@
     ctx.restore();
   }
 
+  function mercFrame(cls, stage, w, b, m) {
+    const now = performance.now();
+    const a = anim[cls] || {};
+    let key = 'stand', f = [0, 1, 2, 1][Math.floor(now / 450 + m.x) % 4];
+    if (a.atk && now - a.atk < 450) { key = 'attack'; f = Math.min(2, Math.floor((now - a.atk) / 150)); }
+    else if (a.hit && now - a.hit < 250) { key = 'hit'; f = 0; }
+    return A.char(cls, stage, w, key, f) || A.char(cls, stage, w, 'stand', 0);
+  }
+
   function drawMerc(ctx, st, b, m, t) {
     const merc = st.mercs[m.cls];
     const stage = avatarStage(merc.lv);
@@ -89,10 +116,15 @@
       ctx.beginPath(); ctx.ellipse(m.x, y - 26, 30, 36, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     }
     if (m.invincUntil > b.time) { ctx.save(); ctx.globalAlpha = 0.5; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(m.x, y - 26, 34, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
-    emoji(ctx, AVATAR[m.cls][stage], m.x, y, 46, true);
-    // 무기 (장착한 무기 외형만 반영)
     const wpn = merc.equip.weapon;
-    if (wpn) {
+    const sprite = mercFrame(m.cls, stage, wpn ? wpn.tier : 0, b, m);
+    if (sprite) {
+      ctx.save(); ctx.translate(m.x, 0); ctx.scale(-1, 1);
+      ctx.drawImage(sprite, -sprite.width * S / 2, GROUND + 4 - sprite.height * S / 2, sprite.width * S, sprite.height * S);
+      ctx.restore();
+    } else emoji(ctx, AVATAR[m.cls][stage], m.x, y, 46, true);
+    // 무기 (장착한 무기 외형만 반영) — 스프라이트가 없을 때만 따로 그림
+    if (wpn && !sprite) {
       ctx.save(); ctx.shadowColor = TIER_COLOR[wpn.tier]; ctx.shadowBlur = 8 + wpn.tier * 2;
       emoji(ctx, WEAPON_ICON[m.cls], m.x + 22, y - 10, 22 + wpn.tier); ctx.restore();
     }
@@ -103,9 +135,9 @@
         emoji(ctx, '🔨', m.x + Math.cos(a) * 42, y - 22 + Math.sin(a) * 14 + 8, 14);
       }
     }
-    bar(ctx, m.x - 24, y - 60, 48, 5, m.hp / m.s.hp, m.hp / m.s.hp < 0.3 ? '#f43f5e' : '#22c55e');
+    bar(ctx, m.x - 24, y - 84, 48, 5, m.hp / m.s.hp, m.hp / m.s.hp < 0.3 ? '#f43f5e' : '#22c55e');
     ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(`Lv.${merc.lv}`, m.x, y - 64);
+    ctx.fillText(`Lv.${merc.lv}`, m.x, y - 88);
     // 상태 아이콘
     const icons = [];
     if (m.poison) icons.push('☠️');
@@ -114,7 +146,7 @@
     if (b.prayUntil > b.time) icons.push('🙏');
     if (m.rageUntil > b.time) icons.push('💢');
     if (m.loveUntil > b.time) icons.push('💗');
-    icons.forEach((ic, i) => emoji(ctx, ic, m.x - (icons.length - 1) * 7 + i * 14, y - 76, 12));
+    icons.forEach((ic, i) => emoji(ctx, ic, m.x - (icons.length - 1) * 7 + i * 14, y - 100, 12));
   }
 
   function drawMonster(ctx, b, m, t) {
@@ -122,6 +154,20 @@
     const size = m.kind === 'regionBoss' ? 110 : m.kind === 'boss' ? 80 : m.kind === 'box' ? 56 : 40;
     const y = monY(m) + (m.stunUntil > b.time ? 0 : Math.sin(t * 5 + m.id) * 2);
     ctx.fillStyle = '#0005'; ctx.beginPath(); ctx.ellipse(m.x, monY(m) + 6, size * 0.45, 7, 0, 0, Math.PI * 2); ctx.fill();
+    const meta = m.mob && A.mobMeta[m.mob];
+    if (meta && m.kind !== 'box') {
+      const fr = mobFrame(b, m, meta);
+      if (fr) {
+        const [im, f] = fr;
+        const gy = monY(m);
+        const k = mobScale(m.mob, m.kind);
+        ctx.drawImage(im, m.x - f.ox * k, gy - f.oy * k, im.width * k, im.height * k);
+        const top = gy - Math.min(f.oy * k, 120);
+        if (m.stunUntil > b.time) emoji(ctx, '💫', m.x, top - 2, 16);
+        if (!big) bar(ctx, m.x - 22, top - 8, 44, 4, m.hp / m.maxHp, '#ef4444');
+        return;
+      }
+    }
     if (m.kind === 'box') {
       const col = { rare: '#60a5fa', epic: '#c084fc', unique: '#fbbf24', legendary: '#4ade80' }[m.grade];
       ctx.save(); ctx.shadowColor = col; ctx.shadowBlur = 25; emoji(ctx, '🎁', m.x, y, size); ctx.restore();
@@ -130,6 +176,48 @@
     } else emoji(ctx, m.icon, m.x, y, size);
     if (m.stunUntil > b.time) emoji(ctx, '💫', m.x, y - size + 6, 16);
     if (!big || m.kind === 'box') bar(ctx, m.x - size * 0.4, y - size - (m.kind === 'box' ? 0 : 2), size * 0.8, 4, m.hp / m.maxHp, '#ef4444');
+  }
+
+  // 몬스터별 표시 배율: 원본이 큰 몬스터는 화면에 맞게 줄인다
+  const mobScaleCache = {};
+  function mobScale(id, kind) {
+    const k = id + kind;
+    if (mobScaleCache[k]) return mobScaleCache[k];
+    const meta = A.mobMeta[id];
+    const st = (meta && (meta.stand || meta.move)) || [];
+    const h = Math.max(1, ...st.map((f) => f.h));
+    const target = kind === 'regionBoss' ? 260 : kind === 'boss' ? 190 : 105;
+    return (mobScaleCache[k] = Math.min(S, target / h));
+  }
+  function pickFrame(frames, elapsed, loop) {
+    const total = frames.reduce((s, f) => s + (f.d || 120), 0) || 1;
+    let t = loop ? elapsed % total : Math.min(elapsed, total - 1);
+    for (let i = 0; i < frames.length; i++) { t -= frames[i].d || 120; if (t < 0) return i; }
+    return frames.length - 1;
+  }
+  function mobFrame(b, m, meta) {
+    const now = performance.now();
+    const moving = lastX[m.id] != null && Math.abs(lastX[m.id] - m.x) > 0.01;
+    lastX[m.id] = m.x;
+    let key = moving && meta.move ? 'move' : 'stand', start = 0, loop = true;
+    const atkEl = m.atkAt != null ? (b.time - m.atkAt) * 1000 : Infinity;
+    if (meta.attack && atkEl < meta.attack.reduce((s, f) => s + (f.d || 120), 0)) { key = 'attack'; start = now - atkEl; loop = false; }
+    else if (meta.hit && monHit[m.id] && now - monHit[m.id] < 200) { key = 'hit'; start = monHit[m.id]; loop = false; }
+    const frames = meta[key] || meta.stand;
+    if (!frames || !frames.length) return null;
+    const i = pickFrame(frames, now - start + m.id * 37, loop);
+    const im = A.mob(m.mob, meta[key] ? key : 'stand', i);
+    return im ? [im, frames[i]] : null;
+  }
+  function drawCorpses(ctx) {
+    const now = performance.now();
+    for (let i = corpses.length - 1; i >= 0; i--) {
+      const c = corpses[i], frames = A.mobMeta[c.mob].die;
+      const el = now - c.start, total = frames.reduce((s, f) => s + (f.d || 120), 0);
+      if (el > total || corpses.length > 40) { corpses.splice(i, 1); continue; }
+      const k = pickFrame(frames, el, false), im = A.mob(c.mob, 'die', k);
+      if (im) { const sc = mobScale(c.mob, c.kind); ctx.globalAlpha = Math.max(0, 1 - el / total * 0.6); ctx.drawImage(im, c.x - frames[k].ox * sc, c.y - frames[k].oy * sc, im.width * sc, im.height * sc); ctx.globalAlpha = 1; }
+    }
   }
 
   function drawBossBar(ctx, b) {
@@ -217,12 +305,19 @@
     ctx.restore();
   }
 
-  let last = 0;
+  let last = 0, lastBattle = null;
   function render(ctx, st, b, now) {
+    if (b !== lastBattle && A.ready) {
+      lastBattle = b;
+      for (const k of ['mob', 'boss']) if (b.info.mons[k]) A.preloadMob(b.info.mons[k][2]);
+    }
     const t = now / 1000;
     const dt = last ? Math.min(0.1, t - last) : 0.016;
     last = t;
+    ctx.imageSmoothingEnabled = false;
     bg(ctx, b.info);
+    ctx.imageSmoothingEnabled = false;
+    drawCorpses(ctx);
     for (const m of b.monsters) drawMonster(ctx, b, m, t);
     for (const c of ['mage', 'arch', 'war']) if (b.mercs[c]) drawMerc(ctx, st, b, b.mercs[c], t);
     drawFx(ctx, dt);
@@ -230,7 +325,7 @@
     drawBossBar(ctx, b);
     drawFlash(ctx, dt);
   }
-  function clearFx() { floats.length = 0; fx.length = 0; flash = null; }
+  function clearFx() { floats.length = 0; fx.length = 0; corpses.length = 0; flash = null; }
 
   G.USRender = { render, pushEvents, clearFx, AVATAR, WEAPON_ICON, avatarStage };
 })(window);
