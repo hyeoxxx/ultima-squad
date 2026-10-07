@@ -19,13 +19,15 @@
       const raw = localStorage.getItem(KEY);
       if (raw) { const s = JSON.parse(raw); if (s && s.mercs) return migrate(s); }
     } catch { /* 새로 시작 */ }
-    return US.newState(Date.now());
+    return migrate(US.newState(Date.now()));
   }
   function migrate(s) {
     const base = US.newState(Date.now());
     for (const k of Object.keys(base)) if (s[k] === undefined) s[k] = base[k];
     s.auto = Object.assign(US.defaultAuto(), s.auto || {});
     s.coinUp = s.coinUp || {};
+    s.audio = Object.assign({ master: s.volume ?? 60, bgm: 40, skill: 70, mob: 60, game: 80, bgmOn: s.bgmOn !== false }, s.audio || {});
+    s.pipMode = s.pipMode || 'video';
     return s;
   }
   function save() {
@@ -36,10 +38,10 @@
   // ───────── 사운드 ─────────
   let actx = null;
   function beep(freq, dur, type = 'square', vol = 1) {
-    if (!actx || st.volume <= 0 || document.hidden) return;
+    if (!actx || st.audio.master <= 0 || st.audio.game <= 0 || document.hidden) return;
     const o = actx.createOscillator(), g = actx.createGain();
     o.type = type; o.frequency.value = freq;
-    const v = (st.volume / 100) * 0.06 * vol, t = actx.currentTime;
+    const v = (st.audio.master / 100) * (st.audio.game / 100) * 0.08 * vol, t = actx.currentTime;
     g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur + 0.02);
   }
@@ -72,9 +74,15 @@
   }
   AS.onAudioReady(preloadBattleSounds);
   function syncVolume() {
-    AS.vol.sfx = st.volume / 100 * 0.6;
-    AS.vol.bgm = (st.bgmVolume ?? 40) / 100 * 0.5;
-    AS.vol.bgmOn = st.bgmOn !== false;
+    const a = st.audio;
+    AS.vol.master = a.master / 100;
+    AS.vol.bgm = a.bgm / 100 * 0.5;
+    AS.vol.skill = a.skill / 100 * 0.7;
+    AS.vol.mob = a.mob / 100 * 0.7;
+    AS.vol.game = a.game / 100 * 0.8;
+    AS.vol.bgmOn = a.bgmOn;
+    if ($('vol')) $('vol').value = a.master;
+    if ($('btnBgm')) $('btnBgm').classList.toggle('on', a.bgmOn);
     AS.applyVolume();
   }
 
@@ -167,7 +175,7 @@
     }
     acc += dt;
     const run = Math.floor(acc / US.DT) * US.DT;
-    if (run > 0) { acc -= run; simulate(run, (!document.hidden || !!pipWin) && run < 1); }
+    if (run > 0) { acc -= run; simulate(run, (!document.hidden || !!pipWin || !!vpip) && run < 1); }
   }
 
   // ───────── 알림 ─────────
@@ -272,6 +280,8 @@
   // ───────── PIP (Document Picture-in-Picture) ─────────
   async function togglePip() {
     if (pipWin) { pipWin.close(); return; }
+    if (vpip) { document.exitPictureInPicture().catch(() => {}); return; }
+    if (st.pipMode !== 'doc') return videoPip();
     if (!('documentPictureInPicture' in window)) { UI.toast('이 브라우저는 PIP 창을 지원하지 않아요 (PC 크롬/엣지 116 이상)'); return; }
     const section = document.querySelector('.battle');
     let win;
@@ -301,6 +311,95 @@
   document.querySelector('.wrap').insertBefore(placeholder, $('manage'));
   $('btnPip').addEventListener('click', togglePip);
 
+  // ───────── 영상 PIP: 전투 화면 + HUD 를 영상으로 띄운다 (창 상단 바 없음, 보기 전용) ─────────
+  let vpip = null;
+  const ticker2 = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 33)'], { type: 'text/javascript' })));
+  ticker2.onmessage = () => {
+    if (!vpip) return;
+    tick();
+    if (battle) RD.render($('cv').getContext('2d'), st, battle, performance.now());
+    drawHud(vpip.cv);
+  };
+  async function videoPip() {
+    if (!document.pictureInPictureEnabled) { UI.toast('이 브라우저는 영상 PIP를 지원하지 않아요. 설정에서 문서 PIP로 바꿔 보세요'); return; }
+    const cv = document.createElement('canvas');
+    cv.width = 1000; cv.height = 400;
+    drawHud(cv);
+    const video = document.createElement('video');
+    video.muted = true; video.playsInline = true;
+    video.srcObject = cv.captureStream(30);
+    try {
+      await video.play();
+      vpip = { cv, video };
+      await video.requestPictureInPicture();
+    } catch (e) { vpip = null; UI.toast('PIP를 열 수 없어요: ' + e.message); return; }
+    $('btnPip').classList.add('on');
+    video.addEventListener('leavepictureinpicture', () => {
+      vpip = null;
+      video.srcObject.getTracks().forEach((t) => t.stop());
+      $('btnPip').classList.remove('on');
+    }, { once: true });
+  }
+  function hudBox(x, l, t, w, h) {
+    x.fillStyle = 'rgba(10,12,24,.66)'; x.strokeStyle = 'rgba(255,255,255,.16)'; x.lineWidth = 1;
+    x.beginPath(); x.roundRect(l, t, w, h, 7); x.fill(); x.stroke();
+  }
+  function hudText(x, text, l, t, color = '#fff', font = '700 15px "Malgun Gothic",sans-serif') {
+    x.font = font; x.fillStyle = color; x.textBaseline = 'middle';
+    x.shadowColor = '#000'; x.shadowBlur = 3; x.fillText(text, l, t); x.shadowBlur = 0;
+    return x.measureText(text).width;
+  }
+  function drawHud(cv) {
+    const x = cv.getContext('2d'), W = cv.width, H = cv.height;
+    x.drawImage($('cv'), 0, 0, W, H);
+    if (!battle) return;
+    // 상단 왼쪽: 자원
+    const fresh = st.inventory.filter((i) => i.isNew).length;
+    const box = st.boxDate === US.today(Date.now());
+    const parts = [[`🎒 ${st.inventory.length}/${st.invSize}${fresh ? ` +${fresh}` : ''}`, US.invFull(st) ? '#fca5a5' : '#fff'], [`💰 ${US.fmt(st.gold)}`, '#fff'], [`🧊 ${st.cubes}`, '#fff'], [`🎁 ${box ? '사용함' : '가능'}`, box ? '#cbd5e1' : '#86efac']];
+    x.font = '700 15px "Malgun Gothic",sans-serif';
+    const widths = parts.map(([t]) => x.measureText(t).width);
+    hudBox(x, 12, 10, widths.reduce((a, b) => a + b, 0) + 18 * parts.length + 6, 30);
+    let lx = 24;
+    parts.forEach(([t, c], i) => { hudText(x, t, lx, 25, c); lx += widths[i] + 18; });
+    // 상단 오른쪽: 스테이지
+    const label = `${st.mode === 'chaos' ? '카오스' : '일반'} ${battle.info.label}  ${battle.info.map.name}`;
+    x.font = '700 15px "Malgun Gothic",sans-serif';
+    const lw = x.measureText(label).width;
+    hudBox(x, W - lw - 36, 10, lw + 24, 30); hudText(x, label, W - lw - 24, 25);
+    // 하단 왼쪽: 용병 경험치
+    const mercs = US.ownedMercs(st);
+    mercs.forEach((c, i) => {
+      const m = st.mercs[c], y = H - 18 - (mercs.length - i) * 30;
+      const pct = m.lv >= D.MAX_LEVEL ? 1 : m.exp / US.expNeed(m.lv);
+      hudBox(x, 10, y, 270, 26);
+      hudText(x, `${D.CLASS_NAME[c]} Lv.${m.lv}`, 20, y + 13, '#fff', '700 14px "Malgun Gothic",sans-serif');
+      x.fillStyle = 'rgba(255,255,255,.15)'; x.fillRect(130, y + 10, 90, 6);
+      x.fillStyle = '#facc15'; x.fillRect(130, y + 10, 90 * pct, 6);
+      hudText(x, m.lv >= D.MAX_LEVEL ? 'MAX' : (pct * 100).toFixed(1) + '%', 228, y + 13, '#fde68a', '700 13px "Malgun Gothic",sans-serif');
+    });
+    // 하단 오른쪽: 최근 획득
+    recentDrops.slice(0, 4).forEach((it, i) => {
+      const name = `${US.itemName(it)} (${it.tier}단계)`;
+      x.font = '700 14px "Malgun Gothic",sans-serif';
+      const w = x.measureText(name).width + 44, y = H - 46 - i * 32;
+      x.globalAlpha = 1 - i * 0.2;
+      hudBox(x, W - w - 10, y, w, 28);
+      const ic = AS.img(AS.iconSrc(it));
+      if (ic) x.drawImage(ic, W - w - 6, y + 2, 24, 24);
+      hudText(x, name, W - w + 24, y + 14, '#fde68a', '700 14px "Malgun Gothic",sans-serif');
+      x.globalAlpha = 1;
+    });
+    // 진행도
+    const prog = battle.info.isBoss ? (battle.monsters[0] ? 1 - battle.monsters[0].hp / battle.monsters[0].maxHp : 1) : battle.killed / battle.total;
+    x.fillStyle = 'rgba(0,0,0,.5)'; x.fillRect(0, H - 6, W, 6);
+    x.fillStyle = '#f59e0b'; x.fillRect(0, H - 6, W * Math.min(1, prog), 6);
+    const pt = battle.info.isBoss ? `보스 ${Math.round(prog * 100)}%` : `${Math.min(battle.killed, battle.total)} / ${battle.total}`;
+    x.font = '700 14px "Malgun Gothic",sans-serif';
+    const pw = x.measureText(pt).width;
+    hudBox(x, W / 2 - pw / 2 - 10, H - 36, pw + 20, 24); hudText(x, pt, W / 2 - pw / 2, H - 24);
+  }
+
   // ───────── 버튼 ─────────
   $('btnBox').addEventListener('click', () => {
     const r = US.summonBox(st, battle, Date.now());
@@ -309,10 +408,8 @@
   $('btnPortal').addEventListener('click', () => { st.stage++; st.repeat = false; st.repeatReason = null; save(); startBattle(); UI.markDirty(); });
   $('btnRepeat').addEventListener('click', () => { st.repeat = !st.repeat; st.repeatReason = null; save(); UI.markDirty(); });
   $('btnBag').addEventListener('click', () => { UI.ui.tab = 'inv'; UI.render(); $('manage').scrollIntoView({ behavior: 'smooth' }); });
-  $('vol').value = st.volume;
-  $('vol').addEventListener('input', (e) => { st.volume = +e.target.value; syncVolume(); save(); });
-  $('btnBgm').addEventListener('click', () => { st.bgmOn = st.bgmOn === false; syncVolume(); $('btnBgm').classList.toggle('on', st.bgmOn); save(); });
-  $('btnBgm').classList.toggle('on', st.bgmOn !== false);
+  $('vol').addEventListener('input', (e) => { st.audio.master = +e.target.value; syncVolume(); save(); UI.markDirty(); });
+  $('btnBgm').addEventListener('click', () => { st.audio.bgmOn = !st.audio.bgmOn; syncVolume(); save(); UI.markDirty(); });
   syncVolume();
 
   // ───────── 시작 ─────────
@@ -321,6 +418,8 @@
     get st() { return st; },
     getBattle: () => battle,
     sessionReport,
+    setAudio(k, v) { st.audio[k] = v; syncVolume(); save(); },
+    setPipMode(m) { st.pipMode = m; save(); },
     resetSession() { session = newSession(); },
     askNotify() { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); },
     save,

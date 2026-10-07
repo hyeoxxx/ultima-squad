@@ -316,6 +316,26 @@
     </div></div>`;
   };
 
+  panels.settings = function () {
+    const a = ctx.st.audio;
+    const sl = (k, label, icon) => `<div class="vrow"><span>${icon} ${label}</span><input type="range" min="0" max="100" step="5" value="${a[k]}" data-audio="${k}"><b>${a[k]}</b></div>`;
+    const pm = ctx.st.pipMode;
+    return `<div class="settings"><div>
+      <h3>🔊 사운드</h3>
+      ${sl('master', '전체 볼륨', '🔈')}
+      <div class="vrow"><span>🎵 배경음악</span><input type="range" min="0" max="100" step="5" value="${a.bgm}" data-audio="bgm"><b>${a.bgm}</b>
+        <label class="chk inline"><input type="checkbox" data-audio="bgmOn" ${a.bgmOn ? 'checked' : ''}> 켜기</label></div>
+      ${sl('skill', '스킬 효과음', '⚔️')}
+      ${sl('mob', '몬스터 효과음', '🍄')}
+      ${sl('game', '게임 효과음 (레벨업·획득·알림)', '🔔')}
+      <p class="small muted">브라우저 정책 때문에 페이지를 연 뒤 한 번 클릭해야 소리가 나기 시작해요.</p>
+    </div><div>
+      <h3>📺 PIP 방식</h3>
+      <label class="radio"><input type="radio" name="pipMode" value="video" ${pm !== 'doc' ? 'checked' : ''}> <b>영상 PIP</b> <span class="small muted">유튜브 PIP처럼 창 상단 바가 없어요. 화면은 보기만 돼요 (상자·반복은 자동 기능으로).</span></label>
+      <label class="radio"><input type="radio" name="pipMode" value="doc" ${pm === 'doc' ? 'checked' : ''}> <b>문서 PIP</b> <span class="small muted">PIP 창 안에서 버튼을 누를 수 있어요. 대신 크롬이 창 위에 주소 바를 항상 붙여요.</span></label>
+    </div></div>`;
+  };
+
   panels.etc = function () {
     const st = ctx.st;
     const days = Math.floor((Date.now() - st.created) / 86400000);
@@ -350,8 +370,14 @@
     render();
   });
 
+  $('panel').addEventListener('input', (e) => {
+    const t = e.target;
+    if (t.dataset.audio && t.type === 'range') { ctx.setAudio(t.dataset.audio, +t.value); t.nextElementSibling.textContent = t.value; }
+  });
   $('panel').addEventListener('change', (e) => {
     const t = e.target;
+    if (t.dataset.audio) { ctx.setAudio(t.dataset.audio, t.type === 'checkbox' ? t.checked : +t.value); return render(); }
+    if (t.name === 'pipMode') { ctx.setPipMode(t.value); return; }
     if (t.dataset.viewsel) { ui.view[t.dataset.viewsel] = t.value; return render(); }
     if (t.dataset.auto) { ctx.st.auto[t.dataset.auto] = t.checked; ctx.save(); if (t.dataset.auto.startsWith('notify') && t.checked) ctx.askNotify(); return render(); }
     if (t.dataset.autov) {

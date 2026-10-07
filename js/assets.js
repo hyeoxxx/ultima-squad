@@ -33,10 +33,11 @@
     for (const [k, frames] of Object.entries(meta)) if (Array.isArray(frames)) frames.forEach((_, i) => img(`assets/mobs/${id}/${k}${i}.png`));
   }
   // ───────── 사운드 (원작 Sound.wz) ─────────
-  let actx = null, sfxGain = null, bgmGain = null, sounds = null;
+  let actx = null, masterGain = null, bgmGain = null, sounds = null;
+  const catGain = {};
   const buffers = {}, loading = {};
   let bgmSrc = null, bgmPath = null, wantBgm = null;
-  const vol = { sfx: 0.3, bgm: 0.3, bgmOn: true };
+  const vol = { master: 0.6, bgm: 0.2, skill: 0.5, mob: 0.4, game: 0.6, bgmOn: true };
   async function initSound() {
     try { sounds = await (await fetch('assets/sound/sounds.json')).json(); } catch { sounds = { skill: {}, mob: {}, game: {}, bgm: {} }; }
   }
@@ -45,8 +46,9 @@
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
       actx = new AC();
-      sfxGain = actx.createGain(); sfxGain.connect(actx.destination);
-      bgmGain = actx.createGain(); bgmGain.connect(actx.destination);
+      masterGain = actx.createGain(); masterGain.connect(actx.destination);
+      bgmGain = actx.createGain(); bgmGain.connect(masterGain);
+      for (const c of ['skill', 'mob', 'game']) { catGain[c] = actx.createGain(); catGain[c].connect(masterGain); }
       applyVolume();
     }
     if (actx.state === 'suspended') actx.resume();
@@ -54,8 +56,9 @@
   }
   function applyVolume() {
     if (!actx) return;
-    sfxGain.gain.value = vol.sfx;
+    masterGain.gain.value = vol.master;
     bgmGain.gain.value = vol.bgmOn ? vol.bgm : 0;
+    for (const c of Object.keys(catGain)) catGain[c].gain.value = vol[c];
   }
   function load(path) {
     if (buffers[path] || loading[path] || !actx) return;
@@ -63,8 +66,8 @@
       .then((buf) => { buffers[path] = buf; }).catch(() => { buffers[path] = null; });
   }
   const last = {};
-  function play(path, gain = 1, gap = 0) {
-    if (!path || !actx || vol.sfx <= 0) return false;
+  function play(path, gain = 1, gap = 0, cat = 'game') {
+    if (!path || !actx || vol.master <= 0) return false;
     const now = performance.now();
     if (gap && last[path] && now - last[path] < gap) return true;
     const buf = buffers[path];
@@ -72,14 +75,14 @@
     last[path] = now;
     const src = actx.createBufferSource(), g = actx.createGain();
     g.gain.value = gain;
-    src.buffer = buf; src.connect(g).connect(sfxGain); src.start();
+    src.buffer = buf; src.connect(g).connect(catGain[cat] || masterGain); src.start();
     return true;
   }
   function sfx(cat, key, kind, gain, gap) {
     if (!sounds || !actx) return false;
     const t = sounds[cat] && sounds[cat][key];
     const path = kind ? t && t[kind] : t;
-    return play(path, gain, gap);
+    return play(path, gain, gap, cat === 'skill' || cat === 'mob' ? cat : 'game');
   }
   function preloadSounds(keys) {
     if (!sounds || !actx) return;
