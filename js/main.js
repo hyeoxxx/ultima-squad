@@ -2,10 +2,12 @@
 (function (G) {
   'use strict';
   const D = G.USData, US = G.US, RD = G.USRender, UI = G.USUI;
-  const $ = (id) => document.getElementById(id);
+  // 전투 화면이 PIP 창으로 옮겨가 있으면 그쪽 문서에서도 찾는다
+  const $ = (id) => document.getElementById(id) || (pipWin && pipWin.document.getElementById(id));
   const KEY = 'ultima-squad:save:v1';
   const MAX_CATCHUP = 120; // 이보다 오래 멈췄으면 (절전 등) 오프라인으로 정산
 
+  let pipWin = null; // Document Picture-in-Picture 창
   let st = load();
   let battle = null;
   let nextBattleAt = 0;
@@ -134,7 +136,7 @@
     }
     acc += dt;
     const run = Math.floor(acc / US.DT) * US.DT;
-    if (run > 0) { acc -= run; simulate(run, !document.hidden && run < 1); }
+    if (run > 0) { acc -= run; simulate(run, (!document.hidden || !!pipWin) && run < 1); }
   }
 
   // ───────── HUD ─────────
@@ -160,10 +162,45 @@
     $('btnPortal').hidden = !portal;
   }
 
+  let lastHud = 0;
   function frame(now) {
+    // PIP 창이 떠 있으면 그 창의 애니메이션 프레임으로 돌린다 (원래 탭이 가려져도 부드럽게)
+    if (pipWin) { tick(); if (now - lastHud > 250) { lastHud = now; hud(); } }
     if (battle) RD.render($('cv').getContext('2d'), st, battle, now);
-    requestAnimationFrame(frame);
+    (pipWin || window).requestAnimationFrame(frame);
   }
+
+  // ───────── PIP (Document Picture-in-Picture) ─────────
+  async function togglePip() {
+    if (pipWin) { pipWin.close(); return; }
+    if (!('documentPictureInPicture' in window)) { UI.toast('이 브라우저는 PIP 창을 지원하지 않아요 (PC 크롬/엣지 116 이상)'); return; }
+    const section = document.querySelector('.battle');
+    let win;
+    try { win = await documentPictureInPicture.requestWindow({ width: 640, height: 340 }); }
+    catch (e) { UI.toast('PIP 창을 열 수 없어요: ' + e.message); return; }
+    for (const node of document.querySelectorAll('link[rel=stylesheet], style')) win.document.head.appendChild(node.cloneNode(true));
+    win.document.title = '울티마 스쿼드';
+    win.document.body.classList.add('pip');
+    win.document.body.appendChild(section);
+    pipWin = win;
+    $('btnPip').classList.add('on');
+    placeholder.hidden = false;
+    win.addEventListener('pagehide', () => {
+      document.querySelector('.wrap').insertBefore(section, $('manage'));
+      pipWin = null;
+      placeholder.hidden = true;
+      $('btnPip').classList.remove('on');
+      requestAnimationFrame(frame);
+    });
+    win.requestAnimationFrame(frame);
+  }
+  const placeholder = document.createElement('div');
+  placeholder.className = 'pip-placeholder';
+  placeholder.hidden = true;
+  placeholder.innerHTML = '📺 전투 화면이 PIP 창에 떠 있어요. <button class="btn sm">원래대로</button>';
+  placeholder.querySelector('button').onclick = () => pipWin && pipWin.close();
+  document.querySelector('.wrap').insertBefore(placeholder, $('manage'));
+  $('btnPip').addEventListener('click', togglePip);
 
   // ───────── 버튼 ─────────
   $('btnBox').addEventListener('click', () => {

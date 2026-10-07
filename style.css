@@ -159,3 +159,13 @@ table.t th { color: var(--muted); font-weight: 600; font-size: 12px; }
 .skic { width: 26px; height: 26px; vertical-align: middle; image-rendering: pixelated; flex: none; }
 .sk { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .sk small { width: 100%; }
+
+.pip-placeholder { background: var(--panel); border: 1px dashed var(--line); border-radius: 14px; padding: 14px; text-align: center; color: var(--muted); }
+.pip-placeholder[hidden] { display: none; }
+body.pip { margin: 0; min-height: 0; background: var(--bg); overflow: hidden; }
+body.pip .battle { border: 0; border-radius: 0; height: 100vh; display: flex; flex-direction: column; }
+body.pip .canvas-wrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; background: #000; }
+body.pip #cv { width: auto; height: auto; max-width: 100%; max-height: 100%; }
+body.pip .battle-top { padding: 4px 8px; }
+body.pip .battle-bottom { padding: 4px 8px; gap: 6px; }
+body.pip .vol, body.pip #btnBag { display: none; }
