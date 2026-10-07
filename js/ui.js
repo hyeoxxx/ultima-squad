@@ -352,7 +352,7 @@
   panels.etc = function () {
     const st = ctx.st;
     const days = Math.floor((Date.now() - st.created) / 86400000);
-    return `<h3>기록</h3><table class="t">
+    return `<div class="row" style="margin-bottom:12px"><button class="btn primary" data-act="tutorial">튜토리얼 다시 보기</button></div><h3>기록</h3><table class="t">
       <tr><td>시작한 지</td><td>${days}일</td></tr><tr><td>처치한 몬스터</td><td>${fmt(st.stats.kills)}</td></tr>
       <tr><td>처치한 보스</td><td>${fmt(st.stats.bossKills)}</td></tr><tr><td>에스페시아 상자</td><td>${st.stats.boxes}</td></tr></table>
       <hr><h3>${MI('box')} 에스페시아 상자 1회 초기화</h3>
@@ -472,6 +472,7 @@
     const act = t.dataset.act;
     switch (act) {
       case 'recruit': if (res(US.recruit(st, t.dataset.cls), `${D.CLASS_NAME[t.dataset.cls]} 영입 완료! 자동으로 전투에 배치됩니다`)) ctx.onRoster(); break;
+      case 'tutorial': ctx.startTutorial(); return;
       case 'boxReset':
         if (st.boxResetUsed) break;
         if (st.boxDate !== US.today(Date.now())) { toast('오늘은 아직 상자를 소환하지 않았어요. 소환한 뒤에 쓰세요'); break; }

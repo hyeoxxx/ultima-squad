@@ -426,6 +426,7 @@
     get st() { return st; },
     getBattle: () => battle,
     sessionReport,
+    startTutorial() { G.USTutorial.start(tutorialCtx); },
     setAudio(k, v) { st.audio[k] = v; syncVolume(); save(); },
     setPipMode(m) { st.pipMode = m; save(); },
     resetSession() { session = newSession(); },
@@ -498,6 +499,15 @@
     takeover();
   }
   lockEl.querySelector('button').onclick = () => { takeover(); setTimeout(() => { if (paused) resumeFromStorage(); }, 300); };
+
+  // 첫 접속이면 튜토리얼 (오프라인 보상 팝업이 떠 있으면 닫힌 뒤에)
+  const tutorialCtx = { done() { st.tutorialDone = true; save(); } };
+  function maybeTutorial() {
+    if (st.tutorialDone || paused) return;
+    if (!$('modal').hidden) { setTimeout(maybeTutorial, 800); return; }
+    G.USTutorial.start(tutorialCtx);
+  }
+  setTimeout(maybeTutorial, 1200);
 
   G.USGame = { get st() { return st; }, get battle() { return battle; } }; // 디버그용
 })(window);
