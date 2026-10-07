@@ -8,6 +8,7 @@
   const MAX_CATCHUP = 120; // 이보다 오래 멈췄으면 (절전 등) 오프라인으로 정산
 
   let pipWin = null; // Document Picture-in-Picture 창
+  let paused = false; // 다른 탭에서 실행 중이면 이 탭은 멈춘다
   let st = load();
   let battle = null;
   let nextBattleAt = 0;
@@ -31,6 +32,7 @@
     return s;
   }
   function save() {
+    if (paused) return; // 다른 탭이 실행 중이면 저장하지 않는다 (덮어쓰기 방지)
     st.lastSeen = Date.now();
     try { localStorage.setItem(KEY, JSON.stringify(st)); } catch { /* 저장 공간 부족 등 */ }
   }
@@ -162,6 +164,7 @@
   }
 
   function tick() {
+    if (paused) { lastReal = Date.now(); return; }
     const now = Date.now();
     let dt = (now - lastReal) / 1000;
     lastReal = now;
@@ -449,5 +452,47 @@
   window.addEventListener('beforeunload', save);
   requestAnimationFrame(frame);
   hud();
+  // ───────── 한 번에 한 탭에서만 실행 ─────────
+  // 같은 게임을 여러 탭/창에서 열면 진행이 겹치고 저장이 서로 덮어써진다.
+  // 새로 연(또는 '여기서 계속하기'를 누른) 탭이 실행권을 가져가고, 기존 탭은 저장 후 멈춘다.
+  const myId = Math.random().toString(36).slice(2);
+  const bc = 'BroadcastChannel' in window ? new BroadcastChannel('ultima-squad') : null;
+  const lockEl = document.createElement('div');
+  lockEl.className = 'tab-lock';
+  lockEl.hidden = true;
+  lockEl.innerHTML = '<div><b>다른 탭(창)에서 게임이 실행 중이에요</b><p>진행이 겹치거나 저장이 덮어써지지 않게 이 탭은 멈췄어요.</p><button class="btn primary">여기서 계속하기</button></div>';
+  document.body.appendChild(lockEl);
+  function pauseHere() {
+    if (paused) return;
+    save();
+    paused = true;
+    if (vpip) document.exitPictureInPicture().catch(() => {});
+    if (pipWin) pipWin.close();
+    AS.vol.master = 0; AS.applyVolume();
+    lockEl.hidden = false;
+    if (bc) bc.postMessage({ type: 'released', id: myId });
+  }
+  function resumeFromStorage() {
+    st = load();
+    paused = false;
+    lockEl.hidden = true;
+    lastReal = Date.now(); acc = 0;
+    syncVolume(); startBattle(); UI.render();
+  }
+  function takeover() {
+    if (!bc) return;
+    bc.postMessage({ type: 'takeover', id: myId });
+  }
+  if (bc) {
+    bc.onmessage = (e) => {
+      const m = e.data || {};
+      if (m.id === myId) return;
+      if (m.type === 'takeover') pauseHere();
+      else if (m.type === 'released' && !paused) resumeFromStorage(); // 다른 탭이 방금 저장한 최신 기록으로 이어서
+    };
+    takeover();
+  }
+  lockEl.querySelector('button').onclick = () => { takeover(); setTimeout(() => { if (paused) resumeFromStorage(); }, 300); };
+
   G.USGame = { get st() { return st; }, get battle() { return battle; } }; // 디버그용
 })(window);
