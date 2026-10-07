@@ -47,21 +47,42 @@
     if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
     if (actx.state === 'suspended') actx.resume();
   }, { once: false });
-  let lastHitSound = 0;
+  // 원작 효과음 (없으면 비프음으로 대신)
+  const AS = G.USAssets;
   function sounds(events) {
-    const now = performance.now();
     for (const e of events) {
-      if (e.t === 'dmg' && now - lastHitSound > 70) { lastHitSound = now; beep(e.crit ? 520 : 300 + Math.random() * 80, 0.05, 'square', 0.5); }
-      else if (e.t === 'levelup') { beep(660, 0.12, 'triangle'); setTimeout(() => beep(880, 0.12, 'triangle'), 120); setTimeout(() => beep(1320, 0.2, 'triangle'), 240); }
-      else if (e.t === 'drop') beep(1200, 0.08, 'sine');
-      else if (e.t === 'skill' && D.SKILLS[e.skill] && D.SKILLS[e.skill].fx === 'ult') beep(110, 0.6, 'sawtooth', 1.5);
-      else if (e.t === 'down') beep(160, 0.3, 'sawtooth');
+      if (e.t === 'skill') {
+        if (!AS.sfx('skill', e.skill, 'Use', 0.8, 90) && D.SKILLS[e.skill] && D.SKILLS[e.skill].fx === 'ult') beep(110, 0.6, 'sawtooth', 1.5);
+        if (e.ids && e.ids.length) setTimeout(() => AS.sfx('skill', e.skill, 'Hit', 0.6, 90), 140);
+      } else if (e.t === 'dmg') { if (e.mob) AS.sfx('mob', String(e.mob), 'Damage', 0.5, 110); }
+      else if (e.t === 'kill') { if (e.mob) AS.sfx('mob', String(e.mob), 'Die', 0.7, 80); }
+      else if (e.t === 'levelup') { if (!AS.sfx('game', 'LevelUp', null, 0.9)) { beep(660, 0.12, 'triangle'); setTimeout(() => beep(880, 0.12, 'triangle'), 120); } }
+      else if (e.t === 'drop') { if (!AS.sfx('game', 'PickUpItem', null, 0.7, 120)) beep(1200, 0.08, 'sine'); }
+      else if (e.t === 'down') { if (!AS.sfx('game', 'Tombstone', null, 0.8)) beep(160, 0.3, 'sawtooth'); }
+      else if (e.t === 'firstclear') AS.sfx('game', 'QuestClear', null, 0.8);
+      else if (e.t === 'box') AS.sfx('game', 'EnchantSuccess', null, 0.8);
     }
+  }
+  function preloadBattleSounds() {
+    if (!battle) return;
+    const keys = [['game', 'LevelUp'], ['game', 'PickUpItem'], ['game', 'Tombstone'], ['game', 'QuestClear'], ['game', 'EnchantSuccess']];
+    for (const k of ['mob', 'boss']) if (battle.info.mons[k]) keys.push(['mob', String(battle.info.mons[k][2])]);
+    for (const c of Object.keys(battle.mercs)) { keys.push(['skill', D.BASIC[c]]); st.mercs[c].skills.forEach((id) => id && keys.push(['skill', id])); }
+    AS.preloadSounds(keys);
+  }
+  AS.onAudioReady(preloadBattleSounds);
+  function syncVolume() {
+    AS.vol.sfx = st.volume / 100 * 0.6;
+    AS.vol.bgm = (st.bgmVolume ?? 40) / 100 * 0.5;
+    AS.vol.bgmOn = st.bgmOn !== false;
+    AS.applyVolume();
   }
 
   // ───────── 전투 ─────────
   function startBattle() {
     battle = US.createBattle(st, Date.now());
+    AS.bgm(`${battle.info.r}_${D.mapIndex(battle.info.s)}`);
+    preloadBattleSounds();
     if (battle.info.isBoss && !US.isCleared(st, st.mode, st.stage)) notify('boss', `${st.mode === 'chaos' ? '카오스 ' : ''}${battle.info.label} 보스 스테이지 도전! (${battle.info.mons.boss[0]})`);
     RD.clearFx();
     updateStageHud();
@@ -227,17 +248,17 @@
     const box = st.boxDate === US.today(Date.now());
     const mercs = US.ownedMercs(st).map((c) => {
       const m = st.mercs[c];
-      const pct = m.lv >= D.MAX_LEVEL ? 'MAX' : (m.exp / US.expNeed(m.lv) * 100).toFixed(1) + '%';
-      return `<span>${D.CLASS_NAME[c]} <b>Lv.${m.lv}</b> <small>${pct}</small></span>`;
+      const pct = m.lv >= D.MAX_LEVEL ? 100 : m.exp / US.expNeed(m.lv) * 100;
+      return `<div class="pm"><span><b>${D.CLASS_NAME[c]}</b> Lv.${m.lv}</span><i><u style="width:${pct.toFixed(1)}%"></u></i><small>${m.lv >= D.MAX_LEVEL ? 'MAX' : pct.toFixed(1) + '%'}</small></div>`;
     }).join('');
-    const drops = recentDrops.map((it) => `<img src="${G.USAssets.iconSrc(it)}" title="${US.itemName(it)} (${it.tier}단계)"><i>${it.tier}</i>`).join('');
-    const html = `<div class="pi-row">
-        <span class="${full ? 'bad' : ''}">🎒 <b>${st.inventory.length}/${st.invSize}</b>${fresh ? ` <small class="new">새 장비 ${fresh}</small>` : ''}${full ? ' <small>가득 참!</small>' : ''}</span>
-        <span>💰 <b>${US.fmt(st.gold)}</b></span><span>🧊 <b>${st.cubes}</b></span>
-        <span class="${box ? 'dim' : 'ok'}">🎁 ${box ? '오늘 사용함' : '소환 가능'}</span>
+    const drops = recentDrops.slice(0, 4).map((it, i) => `<div class="pd" style="opacity:${1 - i * 0.2}"><img src="${G.USAssets.iconSrc(it)}"><span>${US.itemName(it)} <small>(${it.tier}단계)</small></span></div>`).join('');
+    const html = `<div class="po-res">
+        <span class="${full ? 'bad' : ''}">🎒 ${st.inventory.length}/${st.invSize}${fresh ? ` <em>+${fresh}</em>` : ''}</span>
+        <span>💰 ${US.fmt(st.gold)}</span><span>🧊 ${st.cubes}</span>
+        <span class="${box ? 'dim' : 'ok'}">🎁 ${box ? '사용함' : '가능'}</span>
       </div>
-      <div class="pi-row">${mercs}</div>
-      ${drops ? `<div class="pi-row drops"><small>최근 획득</small>${drops}</div>` : ''}`;
+      <div class="po-mercs">${mercs}</div>
+      ${drops ? `<div class="po-drops">${drops}</div>` : ''}`;
     if (html !== lastPipInfo) { el.innerHTML = html; lastPipInfo = html; }
   }
 
@@ -254,7 +275,7 @@
     if (!('documentPictureInPicture' in window)) { UI.toast('이 브라우저는 PIP 창을 지원하지 않아요 (PC 크롬/엣지 116 이상)'); return; }
     const section = document.querySelector('.battle');
     let win;
-    try { win = await documentPictureInPicture.requestWindow({ width: 640, height: 420 }); }
+    try { win = await documentPictureInPicture.requestWindow({ width: 640, height: 360 }); }
     catch (e) { UI.toast('PIP 창을 열 수 없어요: ' + e.message); return; }
     for (const node of document.querySelectorAll('link[rel=stylesheet], style')) win.document.head.appendChild(node.cloneNode(true));
     win.document.title = '울티마 스쿼드';
@@ -289,7 +310,10 @@
   $('btnRepeat').addEventListener('click', () => { st.repeat = !st.repeat; st.repeatReason = null; save(); UI.markDirty(); });
   $('btnBag').addEventListener('click', () => { UI.ui.tab = 'inv'; UI.render(); $('manage').scrollIntoView({ behavior: 'smooth' }); });
   $('vol').value = st.volume;
-  $('vol').addEventListener('input', (e) => { st.volume = +e.target.value; save(); });
+  $('vol').addEventListener('input', (e) => { st.volume = +e.target.value; syncVolume(); save(); });
+  $('btnBgm').addEventListener('click', () => { st.bgmOn = st.bgmOn === false; syncVolume(); $('btnBgm').classList.toggle('on', st.bgmOn); save(); });
+  $('btnBgm').classList.toggle('on', st.bgmOn !== false);
+  syncVolume();
 
   // ───────── 시작 ─────────
   const off = US.applyOffline(st, Date.now());

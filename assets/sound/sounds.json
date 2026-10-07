@@ -1,0 +1,184 @@
+{
+ "skill": {
+  "slash_blast": {
+   "Use": "sound/skill/slash_blast_Use.mp3",
+   "Hit": "sound/skill/slash_blast_Hit.mp3"
+  },
+  "aura_blade": {
+   "Use": "sound/skill/aura_blade_Use.mp3",
+   "Hit": "sound/skill/aura_blade_Hit.mp3"
+  },
+  "blessed_hammer": {
+   "Hit": "sound/skill/blessed_hammer_Hit.mp3"
+  },
+  "divide": {
+   "Use": "sound/skill/divide_Use.mp3",
+   "Hit": "sound/skill/divide_Hit.mp3"
+  },
+  "invincible_belief": {
+   "Use": "sound/skill/invincible_belief_Use.mp3"
+  },
+  "demon_bane": {
+   "Hit": "sound/skill/demon_bane_Hit.mp3"
+  },
+  "arrow_blow": {
+   "Use": "sound/skill/arrow_blow_Use.mp3",
+   "Hit": "sound/skill/arrow_blow_Hit.mp3"
+  },
+  "storm_arrow": {
+   "Use": "sound/skill/storm_arrow_Use.mp3",
+   "Hit": "sound/skill/storm_arrow_Hit.mp3"
+  },
+  "vortex_sphere": {
+   "Use": "sound/skill/vortex_sphere_Use.mp3",
+   "Hit": "sound/skill/vortex_sphere_Hit.mp3"
+  },
+  "soul_contract": {
+   "Use": "sound/skill/soul_contract_Use.mp3"
+  },
+  "elemental_ghost": {
+   "Use": "sound/skill/elemental_ghost_Use.mp3"
+  },
+  "dragon_burst": {
+   "Hit": "sound/skill/dragon_burst_Hit.mp3"
+  },
+  "energy_bolt": {
+   "Use": "sound/skill/energy_bolt_Use.mp3",
+   "Hit": "sound/skill/energy_bolt_Hit.mp3"
+  },
+  "chain_lightning": {
+   "Use": "sound/skill/chain_lightning_Use.mp3",
+   "Hit": "sound/skill/chain_lightning_Hit.mp3"
+  },
+  "heal": {
+   "Use": "sound/skill/heal_Use.mp3",
+   "Hit": "sound/skill/heal_Hit.mp3"
+  },
+  "heavens_door": {
+   "Use": "sound/skill/heavens_door_Use.mp3",
+   "Hit": "sound/skill/heavens_door_Hit.mp3"
+  },
+  "flame_sweep": {
+   "Use": "sound/skill/flame_sweep_Use.mp3",
+   "Hit": "sound/skill/flame_sweep_Hit.mp3"
+  },
+  "pray": {
+   "Use": "sound/skill/pray_Use.mp3"
+  },
+  "zodiac_ray": {
+   "Use": "sound/skill/zodiac_ray_Use.mp3",
+   "Hit": "sound/skill/zodiac_ray_Hit.mp3"
+  }
+ },
+ "mob": {
+  "1210102": {
+   "Damage": "sound/mob/1210102_Damage.mp3",
+   "Die": "sound/mob/1210102_Die.mp3"
+  },
+  "6130101": {
+   "Damage": "sound/mob/6130101_Damage.mp3",
+   "Die": "sound/mob/6130101_Die.mp3"
+  },
+  "7130600": {
+   "Damage": "sound/mob/7130600_Damage.mp3",
+   "Die": "sound/mob/7130600_Die.mp3"
+  },
+  "8150302": {
+   "Damage": "sound/mob/8150302_Damage.mp3",
+   "Die": "sound/mob/8150302_Die.mp3"
+  },
+  "8200003": {
+   "Damage": "sound/mob/8200003_Damage.mp3",
+   "Die": "sound/mob/8200003_Die.mp3"
+  },
+  "8200012": {
+   "Damage": "sound/mob/8200012_Damage.mp3",
+   "Die": "sound/mob/8200012_Die.mp3"
+  },
+  "8641000": {
+   "Damage": "sound/mob/8641000_Damage.wav",
+   "Die": "sound/mob/8641000_Die.wav"
+  },
+  "8641006": {
+   "Damage": "sound/mob/8641006_Damage.wav",
+   "Die": "sound/mob/8641006_Die.wav"
+  },
+  "8642006": {
+   "Damage": "sound/mob/8642006_Damage.mp3",
+   "Die": "sound/mob/8642006_Die.mp3"
+  },
+  "8642007": {
+   "Damage": "sound/mob/8642007_Damage.mp3",
+   "Die": "sound/mob/8642007_Die.mp3"
+  },
+  "8644001": {
+   "Damage": "sound/mob/8644001_Damage.mp3",
+   "Die": "sound/mob/8644001_Die.mp3"
+  },
+  "8644010": {
+   "Damage": "sound/mob/8644010_Damage.mp3",
+   "Die": "sound/mob/8644010_Die.mp3"
+  },
+  "8644011": {
+   "Damage": "sound/mob/8644011_Damage.mp3",
+   "Die": "sound/mob/8644011_Die.mp3"
+  },
+  "8645123": {
+   "Damage": "sound/mob/8645123_Damage.wav",
+   "Die": "sound/mob/8645123_Die.wav"
+  },
+  "8645135": {
+   "Damage": "sound/mob/8645135_Damage.mp3",
+   "Die": "sound/mob/8645135_Die.mp3"
+  },
+  "8645200": {
+   "Damage": "sound/mob/8645200_Damage.mp3",
+   "Die": "sound/mob/8645200_Die.mp3"
+  },
+  "8645209": {
+   "Damage": "sound/mob/8645209_Damage.mp3",
+   "Die": "sound/mob/8645209_Die.mp3"
+  },
+  "8645293": {
+   "Damage": "sound/mob/8645293_Damage.mp3",
+   "Die": "sound/mob/8645293_Die.mp3"
+  },
+  "8645300": {
+   "Damage": "sound/mob/8645300_Damage.mp3",
+   "Die": "sound/mob/8645300_Die.mp3"
+  },
+  "8645307": {
+   "Damage": "sound/mob/8645307_Damage.mp3",
+   "Die": "sound/mob/8645307_Die.mp3"
+  },
+  "8820001": {
+   "Damage": "sound/mob/8820001_Damage.mp3",
+   "Die": "sound/mob/8820001_Die.mp3"
+  }
+ },
+ "game": {
+  "LevelUp": "sound/game/LevelUp.mp3",
+  "PickUpItem": "sound/game/PickUpItem.mp3",
+  "DropItem": "sound/game/DropItem.mp3",
+  "Portal": "sound/game/Portal.mp3",
+  "Tombstone": "sound/game/Tombstone.mp3",
+  "QuestClear": "sound/game/QuestClear.mp3",
+  "EnchantSuccess": "sound/game/EnchantSuccess.mp3",
+  "EnchantFailure": "sound/game/EnchantFailure.mp3",
+  "Buff": "sound/game/Buff.mp3"
+ },
+ "bgm": {
+  "0_0": "sound/bgm/Bgm00_RestNPeace.mp3",
+  "0_1": "sound/bgm/Bgm13_MinarsDream.mp3",
+  "0_2": "sound/bgm/Bgm16_Remembrance.mp3",
+  "0_3": "sound/bgm/Bgm16_Remembrance.mp3",
+  "1_0": "sound/bgm/Bgm46_Lake_Of_Oblivion.mp3",
+  "1_1": "sound/bgm/Bgm46_ChewChew_MainTheme.mp3",
+  "1_2": "sound/bgm/Bgm47_TheTuneOfAzureLight.mp3",
+  "1_3": "sound/bgm/Bgm47_TheTuneOfAzureLight.mp3",
+  "2_0": "sound/bgm/Bgm53_SeaWave.mp3",
+  "2_1": "sound/bgm/Bgm57_Wayout_of_the_wilderness.mp3",
+  "2_2": "sound/bgm/Bgm58_Alley_on_the_Other_Side.mp3",
+  "2_3": "sound/bgm/Bgm58_Sunshine_blurring_the_Unknown.mp3"
+ }
+}

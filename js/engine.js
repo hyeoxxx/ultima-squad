@@ -342,7 +342,7 @@
         if (gi < 3 && rand() < BOX_GROW) { target.grade = BOX_GRADES[gi + 1]; b.events.push({ t: 'boxgrow', grade: target.grade }); }
       }
     }
-    b.events.push({ t: 'dmg', id: target.id, v: dmg, crit, cls: m.cls, x: target.x, y: target.y, kind: target.kind });
+    b.events.push({ t: 'dmg', id: target.id, v: dmg, crit, cls: m.cls, x: target.x, y: target.y, kind: target.kind, mob: target.mob });
     if (opts && opts.stun && rand() < opts.stun) target.stunUntil = b.time + 1;
     if (target.hp <= 0) onKill(st, b, target);
   }

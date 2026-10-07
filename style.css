@@ -170,17 +170,6 @@ body.pip .battle-top { padding: 4px 8px; }
 body.pip .battle-bottom { padding: 4px 8px; gap: 6px; }
 body.pip .vol, body.pip #btnBag { display: none; }
 
-.pip-info { display: none; }
-body.pip .pip-info { display: block; padding: 4px 8px 6px; font-size: 12px; border-top: 1px solid var(--line); }
-.pi-row { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; margin: 2px 0; }
-.pi-row small { color: var(--muted); }
-.pi-row .new { color: #fca5a5; }
-.pi-row .bad { color: #fca5a5; }
-.pi-row .ok { color: var(--ok); }
-.pi-row .dim { color: var(--muted); }
-.pi-row.drops { gap: 4px; }
-.pi-row.drops img { width: 24px; height: 24px; image-rendering: pixelated; background: #0005; border-radius: 4px; }
-.pi-row.drops i { font-style: normal; font-size: 10px; font-weight: 800; margin: 0 6px 0 -10px; align-self: flex-start; text-shadow: 0 1px 2px #000; }
 
 .item.up { box-shadow: 0 0 0 2px #34d399 inset; }
 .item .upm { position: absolute; right: 2px; top: 0; font-size: 11px; color: #34d399; font-weight: 900; text-shadow: 0 1px 2px #000; }
@@ -214,3 +203,23 @@ body.pip .pip-info { display: block; padding: 4px 8px 6px; font-size: 12px; bord
 .subtabs > button small { opacity: .6; font-size: 11px; }
 .subtabs .sub-right { margin-left: auto; display: flex; gap: 6px; padding-bottom: 5px; }
 .subtabs select { width: auto; padding: 4px 8px; font-size: 12.5px; }
+
+/* PIP 오버레이: 게임 UI처럼 전투 화면 위에 반투명하게 */
+.pip-info { display: none; }
+body.pip .pip-info { display: block; position: absolute; inset: 0; pointer-events: none; font-size: 11px; color: #fff; text-shadow: 0 1px 2px #000; }
+.pip-info .po-res, .pip-info .pm, .pip-info .pd { background: rgba(10, 12, 24, .62); border: 1px solid rgba(255, 255, 255, .14); border-radius: 6px; }
+.pip-info .po-res { position: absolute; left: 56px; top: 10px; display: flex; gap: 10px; padding: 4px 9px; font-weight: 700; }
+.pip-info .po-res em { font-style: normal; color: #fca5a5; }
+.pip-info .bad { color: #fca5a5; }
+.pip-info .ok { color: #86efac; }
+.pip-info .dim { color: #cbd5e1; opacity: .7; }
+.pip-info .po-mercs { position: absolute; left: 8px; bottom: 8px; display: flex; flex-direction: column; gap: 3px; }
+.pip-info .pm { display: grid; grid-template-columns: 76px 70px 36px; align-items: center; gap: 6px; padding: 2px 7px; }
+.pip-info .pm i { display: block; height: 5px; background: rgba(255, 255, 255, .15); border-radius: 3px; overflow: hidden; }
+.pip-info .pm u { display: block; height: 100%; background: linear-gradient(90deg, #facc15, #fde68a); }
+.pip-info .pm small { text-align: right; color: #fde68a; }
+.pip-info .po-drops { position: absolute; right: 8px; bottom: 8px; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+.pip-info .pd { display: flex; align-items: center; gap: 5px; padding: 2px 8px 2px 3px; color: #fde68a; font-weight: 700; }
+.pip-info .pd img { width: 20px; height: 20px; image-rendering: pixelated; }
+.pip-info .pd small { color: #fff; opacity: .7; font-weight: 400; }
+body.pip .ov-btn.portal { top: 30%; }
