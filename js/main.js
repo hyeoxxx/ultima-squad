@@ -32,6 +32,9 @@
     // 상자 증발 버그 보상: 오늘 이미 소환했으면 한 번 더 소환할 수 있게 (세이브당 1회)
     if (!s.boxBugComp && s.boxDate === US.today(Date.now())) s.boxDate = null;
     s.boxBugComp = true;
+    // 스테이지 이동 시 상자 증발 버그 보상 (세이브당 1회 더)
+    if (!s.boxBugComp2 && s.boxDate === US.today(Date.now()) && !s.pendingBox) s.boxDate = null;
+    s.boxBugComp2 = true;
     return s;
   }
   function save() {
