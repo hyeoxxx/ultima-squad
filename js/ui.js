@@ -128,7 +128,7 @@
   // 탭별로 하위 탭에 셀 장비 목록
   function viewSource(tab) {
     const st = ctx.st;
-    if (tab === 'pot') return [...st.inventory, ...D.CLASSES.flatMap((c) => D.SLOTS.map((sl) => st.mercs[c].equip[sl]).filter(Boolean))].filter((it) => it.tier >= 2);
+    if (tab === 'pot') return [...st.inventory.filter((it) => it.tier >= 2), ...equippedItems()];
     if (tab === 'dis') return st.inventory.filter((x) => !x.lock);
     if (tab === 'inv') return [...st.inventory, ...equippedItems()];
     return st.inventory;
@@ -165,8 +165,8 @@
 
   panels.pot = function () {
     const st = ctx.st;
-    const all = [...st.inventory, ...D.CLASSES.flatMap((c) => D.SLOTS.map((s) => st.mercs[c].equip[s]).filter(Boolean))].filter((it) => it.tier >= 2);
-    const items = view(all);
+    const worn = view(equippedItems());
+    const items = view(st.inventory.filter((it) => it.tier >= 2));
     const it = ui.potItem && US.findItem(st, ui.potItem);
     let right = '<p class="muted">잠재능력을 재설정할 장비를 고르세요. (착용 중인 장비 포함, 2단계 이상)</p>';
     if (it) {
@@ -180,7 +180,11 @@
     return `<div class="inv-layout"><div>
       <div class="row" style="margin-bottom:8px"><b>훈련용 큐브 ${st.cubes}개</b><button class="btn sm" data-act="buyCube" data-n="1">1개 구매 (2만G)</button><button class="btn sm" data-act="buyCube" data-n="10">10개 구매 (20만G)</button></div>
       <p class="small muted">재설정해도 등급은 오르지 않고, 결과 중 전/후를 골라 적용할 수 있어요. 같은 잠재가 다시 나올 수도 있어요.</p>
-      <div class="grid">${items.map((x) => itemCell(x, ui.potItem === x.id ? 'sel' : '')).join('') || '<p class="muted">2단계 이상 장비가 없어요.</p>'}</div>
+      <h4 class="sec">착용 중</h4>
+      <div class="grid">${worn.map((x) => itemCell(x, 'eq' + (x.tier < 2 ? ' dim' : '') + (ui.potItem === x.id ? ' sel' : ''))).join('') || '<p class="muted small">착용 중인 장비가 없어요.</p>'}</div>
+      <h4 class="sec">인벤토리</h4>
+      <div class="grid">${items.map((x) => itemCell(x, ui.potItem === x.id ? 'sel' : '')).join('') || '<p class="muted small">2단계 이상 장비가 없어요.</p>'}</div>
+      <p class="small muted">1단계 장비는 원작처럼 잠재능력이 없어서 재설정할 수 없어요.</p>
     </div><div class="detail">${right}</div></div>`;
   };
 
@@ -404,7 +408,11 @@
     if (t.dataset.item) {
       const id = +t.dataset.item;
       if (ui.tab === 'inv') { ui.sel = id; const it = US.findItem(st, id); if (it) it.isNew = false; }
-      else if (ui.tab === 'pot') { if (ui.potItem !== id) ui.cube = null; ui.potItem = id; }
+      else if (ui.tab === 'pot') {
+        const it = US.findItem(st, id);
+        if (it && it.tier < 2) { toast('1단계 장비는 잠재능력이 없어서 재설정할 수 없어요'); return; }
+        if (ui.potItem !== id) ui.cube = null; ui.potItem = id;
+      }
       else if (ui.tab === 'synth') {
         const it = st.inventory.find((x) => x.id === id);
         if (!it || it.lock) return toast('잠긴 장비는 합성할 수 없어요');
