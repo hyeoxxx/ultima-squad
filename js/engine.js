@@ -333,6 +333,15 @@
     if (opts && opts.echo) dmg *= opts.echo;
     dmg = Math.max(1, Math.round(dmg));
     target.hp -= dmg;
+    // 에스페시아 상자: 체력 75%/50%/25% 지점을 지날 때마다 일정 확률로 다음 등급으로 성장 [추정]
+    if (target.kind === 'box') {
+      const frac = Math.max(0, target.hp) / target.maxHp;
+      while (target.checks < 3 && frac <= 0.75 - 0.25 * target.checks) {
+        target.checks++;
+        const gi = BOX_GRADES.indexOf(target.grade);
+        if (gi < 3 && rand() < BOX_GROW) { target.grade = BOX_GRADES[gi + 1]; b.events.push({ t: 'boxgrow', grade: target.grade }); }
+      }
+    }
     b.events.push({ t: 'dmg', id: target.id, v: dmg, crit, cls: m.cls, x: target.x, y: target.y, kind: target.kind });
     if (opts && opts.stun && rand() < opts.stun) target.stunUntil = b.time + 1;
     if (target.hp <= 0) onKill(st, b, target);
@@ -463,6 +472,7 @@
 
   // ───────── 에스페시아 상자 ─────────
   const BOX_GRADES = ['rare', 'epic', 'unique', 'legendary'];
+  const BOX_GROW = 0.35;
   const BOX_MULT = { rare: 1, epic: 2, unique: 3.5, legendary: 6 };
   const BOX_ITEMS = { rare: 1, epic: 2, unique: 3, legendary: 5 };
   const BOX_CUBES = { rare: 1, epic: 2, unique: 4, legendary: 8 };
@@ -481,7 +491,8 @@
     if (!s.ok) return s;
     st.boxDate = today(now);
     const hp = b.mon.hp * 40;
-    b.box = { id: b.nextMonId++, kind: 'box', hp, maxHp: hp, atk: 0, x: 700, y: 0.5, next: 1e9, stunUntil: 0, grade: 'rare', name: '에스페시아 상자', icon: '🎁' };
+    b.box = { id: b.nextMonId++, kind: 'box', hp, maxHp: hp, atk: 0, x: POS.war + 110, // 모든 용병(전사 근접 포함) 사거리 안
+       y: 0.5, next: 1e9, stunUntil: 0, grade: 'rare', checks: 0, name: '에스페시아 상자', icon: '🎁' };
     b.monsters.push(b.box);
     b.events.push({ t: 'log', msg: '에스페시아 상자 소환!' });
     return { ok: true };
@@ -595,11 +606,6 @@
         mon.atkAt = t;
         if (tgt) { damageMerc(st, b, tgt, mon.atk, 'hit'); if (b.done) return; }
       }
-    }
-    // 상자 성장
-    if (b.box && b.box.hp > 0 && b.box.hp < b.box.maxHp) {
-      const gi = BOX_GRADES.indexOf(b.box.grade);
-      if (gi < 3 && rand() < 0.012 * dt / DT) { b.box.grade = BOX_GRADES[gi + 1]; b.events.push({ t: 'boxgrow', grade: b.box.grade }); }
     }
     if (!tgt && !b.done) b.done = 'fail';
   }
