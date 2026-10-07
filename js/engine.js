@@ -484,7 +484,7 @@
     if (!b || b.done) return { ok: false, why: '전투 중에만 소환할 수 있어요' };
     if (b.info.isBoss) return { ok: false, why: '보스 스테이지에서는 소환할 수 없어요' };
     if (b.bossSpawned || b.spawned >= R.mobsPerStage) return { ok: false, why: '보스 등장 직전에는 소환할 수 없어요' };
-    if (b.box) return { ok: false, why: '이미 상자가 소환되어 있어요' };
+    if (b.box || st.pendingBox) return { ok: false, why: '이미 상자가 소환되어 있어요' };
     if (invFull(st)) return { ok: false, why: '인벤토리가 가득 찼어요' };
     return { ok: true };
   }
@@ -498,6 +498,16 @@
     b.monsters.push(b.box);
     b.events.push({ t: 'log', msg: '에스페시아 상자 소환!' });
     return { ok: true };
+  }
+  // 전투가 끝날 때 남아 있던 상자는 다음 전투에서 이어서 나온다 (등급·남은 체력 유지)
+  function respawnPendingBox(st, b) {
+    const p = st.pendingBox;
+    const maxHp = b.mon.hp * 40;
+    b.box = { id: b.nextMonId++, kind: 'box', hp: Math.max(1, Math.round(maxHp * p.frac)), maxHp, atk: 0, x: POS.war + 110,
+      y: 0.5, next: 1e9, stunUntil: 0, grade: p.grade, checks: p.checks || 0, name: '에스페시아 상자', icon: '🎁' };
+    b.monsters.push(b.box);
+    st.pendingBox = null;
+    b.events.push({ t: 'log', msg: '에스페시아 상자가 다시 나타났어요!' });
   }
   function onBoxKill(st, b, box) {
     b.box = null;
@@ -538,6 +548,7 @@
       const aliveMobs = b.monsters.filter((m) => m.hp > 0 && m.kind === 'mob').length;
       if (aliveMobs === 0 && b.spawned < R.mobsPerStage) spawnWave(b);
       else if (aliveMobs === 0 && b.spawned >= R.mobsPerStage && !b.bossSpawned) spawnBoss(b, false);
+      if (st.pendingBox && !b.box && b.spawned > 0 && !b.bossSpawned) respawnPendingBox(st, b);
     }
     b.monsters = b.monsters.filter((m) => m.hp > 0);
     // 클리어 판정
@@ -614,6 +625,11 @@
 
   // 클리어/실패 처리 → 다음 스테이지 결정. events 에 결과를 남긴다.
   function finishBattle(st, b, now) {
+    if (b.box && b.box.hp > 0) {
+      st.pendingBox = { grade: b.box.grade, frac: b.box.hp / b.box.maxHp, checks: b.box.checks };
+      b.box = null;
+      b.events.push({ t: 'log', msg: '에스페시아 상자는 다음 전투에서 이어서 나와요' });
+    }
     const key = `${b.mode}:${b.idx}`;
     const secs = b.time;
     if (b.done === 'clear') {

@@ -435,3 +435,26 @@ input[type=range] { accent-color: #f5a011; }
 .modal-box h3 { color: var(--gold); }
 .foot { color: #7e89ab; }
 h3 { color: #fff; }
+
+/* 파티 창 (오른쪽) */
+.party { position: absolute; right: 8px; top: 44px; display: flex; flex-direction: column; gap: 5px; pointer-events: none; z-index: 2; width: 196px; }
+.pm-row { display: flex; gap: 6px; align-items: center; padding: 4px 7px 4px 4px; border-radius: 9px;
+  background: linear-gradient(90deg, rgba(14, 18, 34, .25), rgba(14, 18, 34, .78)); border: 1px solid rgba(255, 255, 255, .14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 2px 6px rgba(0, 0, 0, .35); color: #fff; text-shadow: 0 1px 2px #000; }
+.pm-face { width: 36px; height: 36px; flex: none; border-radius: 8px; overflow: hidden; background: radial-gradient(circle at 50% 35%, #4b5a88, #1b2238); border: 1px solid #070a14; }
+.pm-face img { width: 100%; height: 160%; object-fit: cover; object-position: 50% 12%; transform: scaleX(-1); image-rendering: pixelated; }
+.pm-body { flex: 1; min-width: 0; }
+.pm-top { display: flex; align-items: center; gap: 5px; font-size: 11.5px; line-height: 1.2; }
+.pm-top b { color: #ffd77a; }
+.pm-top span { color: #e5e7eb; }
+.pm-ic { margin-left: auto; display: flex; gap: 2px; }
+.pm-ic img { width: 14px; height: 14px; }
+.pm-hp { position: relative; height: 10px; margin-top: 3px; border-radius: 2px; background: rgba(0, 0, 0, .55); border: 1px solid rgba(0, 0, 0, .6); overflow: hidden; }
+.pm-hp i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(180deg, #86efac, #22c55e 55%, #16a34a); transition: width .15s; }
+.pm-row.low .pm-hp i { background: linear-gradient(180deg, #fda4af, #f43f5e 55%, #be123c); }
+.pm-hp em { position: absolute; inset: 0; font-style: normal; font-size: 9px; line-height: 9px; text-align: center; font-weight: 700; }
+.pm-exp { height: 3px; margin-top: 2px; background: rgba(255, 255, 255, .15); border-radius: 2px; overflow: hidden; }
+.pm-exp i { display: block; height: 100%; background: #facc15; }
+.pm-row.down { filter: grayscale(1); opacity: .7; }
+body.pip .party { top: 40px; width: 180px; }
+@media (max-width: 640px) { .party { width: 150px; top: 36px; } .pm-face { width: 28px; height: 28px; } .pm-hp em { display: none; } }

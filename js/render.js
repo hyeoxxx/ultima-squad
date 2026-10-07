@@ -250,7 +250,6 @@
       const tomb = A.img('assets/icons/tomb.png');
       if (tomb) ctx.drawImage(tomb, m.x - tomb.width * 0.6, GROUND + 4 - tomb.height * 1.2, tomb.width * 1.2, tomb.height * 1.2);
       else { ctx.globalAlpha = 0.4; emoji(ctx, '👻', m.x, y, 40); ctx.globalAlpha = 1; }
-      if (m.reviveAt) bar(ctx, m.x - 22, y - 62, 44, 5, 1 - (m.reviveAt - b.time) / D.RATES.reviveTime, '#a3a3a3');
       return;
     }
     // 외형 단계 오라
@@ -281,10 +280,10 @@
         else emoji(ctx, '🔨', m.x + Math.cos(a) * 42, y - 22 + Math.sin(a) * 14 + 8, 14);
       }
     }
-    bar(ctx, m.x - 24, y - 84, 48, 5, m.hp / m.s.hp, m.hp / m.s.hp < 0.3 ? '#f43f5e' : '#22c55e');
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(`Lv.${merc.lv}`, m.x, y - 88);
-    // 상태 아이콘
+    // 체력·레벨·상태는 오른쪽 파티 창에 표시
+  }
+  // 용병 상태 아이콘 (파티 창용)
+  function statusIcons(b, m) {
     const icons = [];
     if (m.poison) icons.push('assets/icons/poison.png');
     if (m.buffs.soul_contract > b.time) icons.push('assets/skills/soul_contract/icon.png');
@@ -292,7 +291,8 @@
     if (b.prayUntil > b.time) icons.push('assets/skills/pray/icon.png');
     if (m.rageUntil > b.time) icons.push('assets/icons/rage.png');
     if (m.loveUntil > b.time) icons.push('assets/icons/heart.png');
-    icons.forEach((src, i) => { const im = A.img(src); if (im) ctx.drawImage(im, m.x - icons.length * 9 + i * 18, y - 112, 16, 16); });
+    if (m.invincUntil > b.time) icons.push('assets/skills/iron_body/icon.png');
+    return icons;
   }
 
   // 기절: 머리 위에서 도는 별
@@ -496,5 +496,5 @@
   }
   function clearFx() { floats.length = 0; fx.length = 0; corpses.length = 0; sfx.length = 0; drops.length = 0; flash = null; }
 
-  G.USRender = { render, pushEvents, clearFx, AVATAR, WEAPON_ICON, avatarStage, _drops: drops };
+  G.USRender = { statusIcons, render, pushEvents, clearFx, AVATAR, WEAPON_ICON, avatarStage, _drops: drops };
 })(window);

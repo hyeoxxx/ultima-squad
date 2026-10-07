@@ -29,6 +29,9 @@
     s.coinUp = s.coinUp || {};
     s.audio = Object.assign({ master: s.volume ?? 60, bgm: 40, skill: 70, mob: 60, game: 80, bgmOn: s.bgmOn !== false }, s.audio || {});
     s.pipMode = s.pipMode || 'video';
+    // 상자 증발 버그 보상: 오늘 이미 소환했으면 한 번 더 소환할 수 있게 (세이브당 1회)
+    if (!s.boxBugComp && s.boxDate === US.today(Date.now())) s.boxDate = null;
+    s.boxBugComp = true;
     return s;
   }
   function save() {
@@ -270,10 +273,34 @@
         <span><img src="assets/icons/meso.png"> ${US.fmt(st.gold)}</span><span><img src="assets/icons/cube.png"> ${st.cubes}</span>
         <span class="${box ? 'dim' : 'ok'}"><img src="assets/icons/box.png"> ${box ? '사용함' : '가능'}</span>
       </div>
-      <div class="po-mercs">${mercs}</div>
       ${drops ? `<div class="po-drops">${drops}</div>` : ''}`;
     if (html !== lastPipInfo) { el.innerHTML = html; lastPipInfo = html; }
   }
+
+  // 원신처럼 오른쪽에 떠 있는 파티 창
+  let lastParty = '';
+  function party() {
+    const el = $('party');
+    if (!el || !battle) return;
+    const html = US.ownedMercs(st).map((c) => {
+      const m = st.mercs[c], bm = battle.mercs[c];
+      if (!bm) return '';
+      const stage = RD.avatarStage(m.lv), w = m.equip.weapon ? m.equip.weapon.tier : 0;
+      const hp = bm.alive ? Math.max(0, bm.hp / bm.s.hp) : 0;
+      const exp = m.lv >= D.MAX_LEVEL ? 1 : m.exp / US.expNeed(m.lv);
+      const revive = !bm.alive && bm.reviveAt ? Math.max(0, bm.reviveAt - battle.time).toFixed(1) : null;
+      const icons = RD.statusIcons(battle, bm).map((src) => `<img src="${src}" alt="">`).join('');
+      return `<div class="pm-row ${bm.alive ? '' : 'down'} ${hp < 0.3 && bm.alive ? 'low' : ''}">
+        <div class="pm-face"><img src="${AS.charSrc(c, stage, w, 'stand', 0)}" alt=""></div>
+        <div class="pm-body">
+          <div class="pm-top"><b>${D.CLASS_NAME[c]}</b><span>Lv.${m.lv}</span><span class="pm-ic">${icons}</span></div>
+          <div class="pm-hp"><i style="width:${(hp * 100).toFixed(1)}%"></i><em>${revive ? `부활 ${revive}초` : `${US.fmt(Math.max(0, bm.hp))} / ${US.fmt(bm.s.hp)}`}</em></div>
+          <div class="pm-exp"><i style="width:${(exp * 100).toFixed(1)}%"></i></div>
+        </div></div>`;
+    }).join('');
+    if (html !== lastParty) { el.innerHTML = html; lastParty = html; }
+  }
+  setInterval(() => { if (!document.hidden || pipWin) party(); }, 150);
 
   function frame(now) {
     // PIP 창이 떠 있으면 그 창의 애니메이션 프레임으로 돌린다 (원래 탭이 가려져도 부드럽게)
@@ -376,16 +403,23 @@
     x.font = '700 15px "Malgun Gothic",sans-serif';
     const lw = x.measureText(label).width;
     hudBox(x, W - lw - 36, 10, lw + 24, 30); hudText(x, label, W - lw - 24, 25);
-    // 하단 왼쪽: 용병 경험치
-    const mercs = US.ownedMercs(st);
-    mercs.forEach((c, i) => {
-      const m = st.mercs[c], y = H - 18 - (mercs.length - i) * 30;
-      const pct = m.lv >= D.MAX_LEVEL ? 1 : m.exp / US.expNeed(m.lv);
-      hudBox(x, 10, y, 270, 26);
-      hudText(x, `${D.CLASS_NAME[c]} Lv.${m.lv}`, 20, y + 13, '#fff', '700 14px "Malgun Gothic",sans-serif');
-      x.fillStyle = 'rgba(255,255,255,.15)'; x.fillRect(130, y + 10, 90, 6);
-      x.fillStyle = '#facc15'; x.fillRect(130, y + 10, 90 * pct, 6);
-      hudText(x, m.lv >= D.MAX_LEVEL ? 'MAX' : (pct * 100).toFixed(1) + '%', 228, y + 13, '#fde68a', '700 13px "Malgun Gothic",sans-serif');
+    // 오른쪽: 파티 창 (초상화 · 레벨 · 체력 · 경험치)
+    US.ownedMercs(st).forEach((c, i) => {
+      const m = st.mercs[c], bm = battle.mercs[c];
+      if (!bm) return;
+      const y = 48 + i * 50, l = W - 230;
+      x.globalAlpha = bm.alive ? 1 : 0.55;
+      hudBox(x, l, y, 220, 44);
+      const face = AS.img(AS.charSrc(c, RD.avatarStage(m.lv), m.equip.weapon ? m.equip.weapon.tier : 0, 'stand', 0));
+      if (face) { x.save(); x.beginPath(); x.roundRect(l + 4, y + 4, 36, 36, 6); x.clip(); x.translate(l + 22, 0); x.scale(-1, 1); x.drawImage(face, -face.width / 2, y + 4 - face.height * 0.18); x.restore(); }
+      hudText(x, `${D.CLASS_NAME[c]}  Lv.${m.lv}`, l + 48, y + 12, '#fde68a', '700 13px "Malgun Gothic",sans-serif');
+      const hp = bm.alive ? Math.max(0, bm.hp / bm.s.hp) : 0;
+      x.fillStyle = 'rgba(0,0,0,.55)'; x.fillRect(l + 48, y + 21, 160, 9);
+      x.fillStyle = hp < 0.3 ? '#f43f5e' : '#4ade80'; x.fillRect(l + 48, y + 21, 160 * hp, 9);
+      const exp = m.lv >= D.MAX_LEVEL ? 1 : m.exp / US.expNeed(m.lv);
+      x.fillStyle = 'rgba(255,255,255,.15)'; x.fillRect(l + 48, y + 34, 160, 4);
+      x.fillStyle = '#facc15'; x.fillRect(l + 48, y + 34, 160 * exp, 4);
+      x.globalAlpha = 1;
     });
     // 하단 오른쪽: 최근 획득
     recentDrops.slice(0, 4).forEach((it, i) => {
