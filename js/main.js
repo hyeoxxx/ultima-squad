@@ -72,6 +72,7 @@
   }
 
   const tickerMsgs = [];
+  const recentDrops = [];
   function ticker(msg, cls) {
     tickerMsgs.push({ msg, cls, at: Date.now() });
     if (tickerMsgs.length > 1) tickerMsgs.shift();
@@ -87,7 +88,7 @@
     let dirty = false;
     for (const e of events) {
       if (e.t === 'log') ticker(e.msg);
-      else if (e.t === 'drop') { ticker(`획득: ${US.itemName(e.item)} (${e.item.tier}단계)`, 'drop'); dirty = true; }
+      else if (e.t === 'drop') { ticker(`획득: ${US.itemName(e.item)} (${e.item.tier}단계)`, 'drop'); recentDrops.unshift(e.item); recentDrops.length = Math.min(recentDrops.length, 6); dirty = true; }
       else if (e.t === 'levelup') { dirty = true; if (visual) ticker(`${D.CLASS_NAME[e.cls]} 레벨 업! Lv.${e.lv}`); }
       else if (e.t === 'firstclear') {
         const r = e.reward;
@@ -163,9 +164,33 @@
   }
 
   let lastHud = 0;
+  // PIP 창 전용 정보줄: 인벤토리, 재화, 용병 레벨, 상자, 최근 획득 장비
+  let lastPipInfo = '';
+  function pipInfo() {
+    const el = $('pipInfo');
+    if (!el || !pipWin) return;
+    const fresh = st.inventory.filter((x) => x.isNew).length;
+    const full = US.invFull(st);
+    const box = st.boxDate === US.today(Date.now());
+    const mercs = US.ownedMercs(st).map((c) => {
+      const m = st.mercs[c];
+      const pct = m.lv >= D.MAX_LEVEL ? 'MAX' : (m.exp / US.expNeed(m.lv) * 100).toFixed(1) + '%';
+      return `<span>${D.CLASS_NAME[c]} <b>Lv.${m.lv}</b> <small>${pct}</small></span>`;
+    }).join('');
+    const drops = recentDrops.map((it) => `<img src="${G.USAssets.iconSrc(it)}" title="${US.itemName(it)} (${it.tier}단계)"><i>${it.tier}</i>`).join('');
+    const html = `<div class="pi-row">
+        <span class="${full ? 'bad' : ''}">🎒 <b>${st.inventory.length}/${st.invSize}</b>${fresh ? ` <small class="new">새 장비 ${fresh}</small>` : ''}${full ? ' <small>가득 참!</small>' : ''}</span>
+        <span>💰 <b>${US.fmt(st.gold)}</b></span><span>🧊 <b>${st.cubes}</b></span>
+        <span class="${box ? 'dim' : 'ok'}">🎁 ${box ? '오늘 사용함' : '소환 가능'}</span>
+      </div>
+      <div class="pi-row">${mercs}</div>
+      ${drops ? `<div class="pi-row drops"><small>최근 획득</small>${drops}</div>` : ''}`;
+    if (html !== lastPipInfo) { el.innerHTML = html; lastPipInfo = html; }
+  }
+
   function frame(now) {
     // PIP 창이 떠 있으면 그 창의 애니메이션 프레임으로 돌린다 (원래 탭이 가려져도 부드럽게)
-    if (pipWin) { tick(); if (now - lastHud > 250) { lastHud = now; hud(); } }
+    if (pipWin) { tick(); if (now - lastHud > 250) { lastHud = now; hud(); pipInfo(); } }
     if (battle) RD.render($('cv').getContext('2d'), st, battle, now);
     (pipWin || window).requestAnimationFrame(frame);
   }
@@ -176,7 +201,7 @@
     if (!('documentPictureInPicture' in window)) { UI.toast('이 브라우저는 PIP 창을 지원하지 않아요 (PC 크롬/엣지 116 이상)'); return; }
     const section = document.querySelector('.battle');
     let win;
-    try { win = await documentPictureInPicture.requestWindow({ width: 640, height: 340 }); }
+    try { win = await documentPictureInPicture.requestWindow({ width: 640, height: 420 }); }
     catch (e) { UI.toast('PIP 창을 열 수 없어요: ' + e.message); return; }
     for (const node of document.querySelectorAll('link[rel=stylesheet], style')) win.document.head.appendChild(node.cloneNode(true));
     win.document.title = '울티마 스쿼드';

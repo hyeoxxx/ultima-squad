@@ -169,3 +169,15 @@ body.pip #cv { width: auto; height: auto; max-width: 100%; max-height: 100%; }
 body.pip .battle-top { padding: 4px 8px; }
 body.pip .battle-bottom { padding: 4px 8px; gap: 6px; }
 body.pip .vol, body.pip #btnBag { display: none; }
+
+.pip-info { display: none; }
+body.pip .pip-info { display: block; padding: 4px 8px 6px; font-size: 12px; border-top: 1px solid var(--line); }
+.pi-row { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; margin: 2px 0; }
+.pi-row small { color: var(--muted); }
+.pi-row .new { color: #fca5a5; }
+.pi-row .bad { color: #fca5a5; }
+.pi-row .ok { color: var(--ok); }
+.pi-row .dim { color: var(--muted); }
+.pi-row.drops { gap: 4px; }
+.pi-row.drops img { width: 24px; height: 24px; image-rendering: pixelated; background: #0005; border-radius: 4px; }
+.pi-row.drops i { font-style: normal; font-size: 10px; font-weight: 800; margin: 0 6px 0 -10px; align-self: flex-start; text-shadow: 0 1px 2px #000; }
