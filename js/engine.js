@@ -39,7 +39,9 @@
       for (const r of rec) if (r[0] <= L) best = r;
       // 실측(오프라인 기록) 기준 레벨당 약 3~8시간이 걸리도록, 기준 처치 속도 대비 1.45배 보정
       const hours = 1.45 * (Math.min(7.5, 1 + 0.45 * L) + Math.max(0, L - 40) * 0.1);
-      NEED[L] = Math.round(KILLS_PER_HOUR_REF * expPerKill(best[1], best[2]) * hours);
+      // 초반 완화: 1~10레벨은 절반, 11~14레벨은 60~90%로 원래 값에 돌아온다
+      const early = L <= 10 ? 0.5 : L <= 14 ? 0.5 + 0.1 * (L - 10) : 1;
+      NEED[L] = Math.round(KILLS_PER_HOUR_REF * expPerKill(best[1], best[2]) * hours * early);
     }
     NEED[D.MAX_LEVEL] = Infinity;
   })();
