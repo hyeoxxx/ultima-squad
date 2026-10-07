@@ -94,6 +94,7 @@
 
   // ───────── 전투 ─────────
   function startBattle() {
+    if (battle && !battle.done) US.stashBox(st, battle); // 스테이지를 옮겨도 상자는 따라온다
     battle = US.createBattle(st, Date.now());
     AS.bgm(`${battle.info.r}_${D.mapIndex(battle.info.s)}`);
     preloadBattleSounds();
@@ -502,8 +503,10 @@
     if ((UI.isDirty() || tab === 'merc' || tab === 'util') && !pointerDown && $('modal').hidden && !document.hidden && !(document.activeElement && ['SELECT', 'INPUT', 'TEXTAREA'].includes(document.activeElement.tagName))) UI.render();
   }, 1000);
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
-  window.addEventListener('pagehide', save);
-  window.addEventListener('beforeunload', save);
+  // 페이지를 닫거나 새로고침해도 소환해 둔 상자는 다음 접속 때 이어서 나온다
+  const saveOnLeave = () => { if (battle && !paused) US.stashBox(st, battle); save(); };
+  window.addEventListener('pagehide', saveOnLeave);
+  window.addEventListener('beforeunload', saveOnLeave);
   requestAnimationFrame(frame);
   hud();
   // ───────── 한 번에 한 탭에서만 실행 ─────────
@@ -518,6 +521,7 @@
   document.body.appendChild(lockEl);
   function pauseHere() {
     if (paused) return;
+    if (battle) US.stashBox(st, battle);
     save();
     paused = true;
     if (vpip) document.exitPictureInPicture().catch(() => {});

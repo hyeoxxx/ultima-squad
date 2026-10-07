@@ -624,12 +624,16 @@
   }
 
   // 클리어/실패 처리 → 다음 스테이지 결정. events 에 결과를 남긴다.
+  // 남은 상자를 다음 전투로 넘긴다 (전투 종료, 스테이지 이동 등 전투가 바뀌는 모든 경우)
+  function stashBox(st, b) {
+    if (!b || !b.box || b.box.hp <= 0) return false;
+    st.pendingBox = { grade: b.box.grade, frac: b.box.hp / b.box.maxHp, checks: b.box.checks };
+    b.monsters = b.monsters.filter((m) => m !== b.box);
+    b.box = null;
+    return true;
+  }
   function finishBattle(st, b, now) {
-    if (b.box && b.box.hp > 0) {
-      st.pendingBox = { grade: b.box.grade, frac: b.box.hp / b.box.maxHp, checks: b.box.checks };
-      b.box = null;
-      b.events.push({ t: 'log', msg: '에스페시아 상자는 다음 전투에서 이어서 나와요' });
-    }
+    if (stashBox(st, b)) b.events.push({ t: 'log', msg: '에스페시아 상자는 다음 전투에서 이어서 나와요' });
     const key = `${b.mode}:${b.idx}`;
     const secs = b.time;
     if (b.done === 'clear') {
@@ -878,7 +882,7 @@
     mercStats, skillCd, expNeed, expPerKill, monsterStats, stageInfo, isCleared, chaosUnlocked, ownedMercs,
     makeItem, itemName, invFull, addItem, availableSkills, canEquip, gainExp, frontier, canEnter,
     applyOffline, offlineBase, boxStatus, summonBox, equipItem, unequipItem, setSkill, recruit, buyUtil, utilNext,
-    expandInv, buyCubes, cubeRoll, cubeApply, findItem, synthesize, autoSynthGroup, dismantle, convertChaosCoins, buyCoinUp, bonus, defaultAuto,
+    expandInv, buyCubes, cubeRoll, cubeApply, findItem, synthesize, autoSynthGroup, dismantle, convertChaosCoins, buyCoinUp, bonus, defaultAuto, stashBox,
     skillSlots, fmt, today,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
