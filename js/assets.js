@@ -126,6 +126,7 @@
     charSrc,
     mob: (id, key, i) => img(`assets/mobs/${id}/${key}${i}.png`),
     bg: (r, m) => img(`assets/maps/${r}_${m}.jpg`),
+    ground: (r, m) => { const i = img(`assets/maps/${r}_${m}_ground.png`); return i && !i.failed ? i : null; },
     iconSrc: (it) => `assets/items/${it.cls}_${it.tier}_${it.slot}.png`,
   };
   init();

@@ -17,16 +17,16 @@
   const fx = [];     // 스킬 이펙트
   let flash = null;  // 극딜기 화면 연출
 
-  function monY(m) { return GROUND - (m.kind === 'mob' ? 6 + m.y * 26 : 0); }
+  function monY(m) { return GROUND + 4 - (m.kind === 'mob' ? m.y * 6 : 0); }
 
   function pushEvents(events, b) {
     for (const e of events) {
       if (e.t === 'dmg') {
-        const y = (e.kind === 'mob' ? GROUND - 6 - e.y * 26 : GROUND) - 50 - Math.random() * 20;
+        const y = GROUND - 60 - Math.random() * 20;
         floats.push({ x: e.x + (Math.random() * 30 - 15), y, v: e.v, crit: e.crit, life: 0.9, kind: 'dmg' });
         monHit[e.id] = performance.now();
       } else if (e.t === 'kill') {
-        if (e.mob && A.mobMeta[e.mob] && A.mobMeta[e.mob].die) corpses.push({ mob: e.mob, kind: e.kind, x: e.x, y: e.kind === 'mob' ? GROUND - 6 - e.y * 26 : GROUND, start: performance.now() });
+        if (e.mob && A.mobMeta[e.mob] && A.mobMeta[e.mob].die) corpses.push({ mob: e.mob, kind: e.kind, x: e.x, y: e.kind === 'mob' ? GROUND + 4 - e.y * 6 : GROUND + 4, start: performance.now() });
       } else if (e.t === 'hurt' || e.t === 'heal') {
         if (e.t === 'hurt') (anim[e.cls] = anim[e.cls] || {}).hit = performance.now();
         const m = b.mercs[e.cls];
@@ -108,6 +108,8 @@
     const pic = A.bg(info.r, G.USData.mapIndex(info.s));
     if (pic) {
       ctx.drawImage(pic, 0, 0, W, H);
+      const ground = A.ground(info.r, G.USData.mapIndex(info.s));
+      if (ground) { ctx.drawImage(ground, 0, GROUND + 4 - 60); return; } // 발판 선이 지면 이미지 위에서 60px
       const g = ctx.createLinearGradient(0, GROUND - 10, 0, H);
       g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.25, 'rgba(0,0,0,.35)'); g.addColorStop(1, 'rgba(0,0,0,.6)');
       ctx.fillStyle = g; ctx.fillRect(0, GROUND - 10, W, H - GROUND + 10);
