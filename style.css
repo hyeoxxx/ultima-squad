@@ -278,3 +278,160 @@ body.pip .pip-info .po-drops { bottom: 38px; }
 .tut-card h3 { margin: 2px 0 8px; font-size: 16px; color: #fde68a; }
 .tut-card p { margin: 0 0 14px; line-height: 1.65; font-size: 13.5px; }
 .tut-step { font-size: 11px; color: var(--muted); }
+
+/* ═════════════════════════════════════════════════════════════
+   메이플스토리 UI 테마
+   - 메이플스토리 폰트, 남색 반투명 창 + 은은한 이중 테두리 + 제목 줄
+   - 주황 그라데이션 "확인" 버튼, 베벨 아이템 슬롯, 상단 맵 일러스트 배경
+   ═════════════════════════════════════════════════════════════ */
+@font-face { font-family: 'Maplestory'; font-weight: 300; font-display: swap; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-04@2.1/MaplestoryOTFLight.woff') format('woff'); }
+@font-face { font-family: 'Maplestory'; font-weight: 700; font-display: swap; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-04@2.1/MaplestoryOTFBold.woff') format('woff'); }
+
+:root {
+  --bg: #0b1020;
+  --panel: #1b2236;
+  --panel2: #252e48;
+  --line: #3a4668;
+  --text: #eef1fb;
+  --muted: #9aa5c7;
+  --accent: #f7a928;
+  --accent2: #7cc4ff;
+  --win-top: #34416a;
+  --win-bot: #1a2034;
+  --gold: #ffd77a;
+}
+body {
+  font-family: 'Maplestory', 'Pretendard', 'Malgun Gothic', system-ui, sans-serif;
+  font-weight: 300;
+  background:
+    linear-gradient(180deg, rgba(11, 16, 32, .35) 0, rgba(11, 16, 32, .85) 260px, var(--bg) 520px),
+    url('assets/maps/0_0.jpg') center top / 1600px auto no-repeat,
+    var(--bg);
+}
+b, strong, h1, h2, h3, h4, th, .btn, .tabs button, .subtabs > button, .chip { font-weight: 700; }
+
+/* 헤더 */
+.top { padding-top: 18px; }
+.brand h1 {
+  font-size: 26px; letter-spacing: -0.5px;
+  background: linear-gradient(180deg, #fff6d6 0%, #ffd77a 45%, #f39c12 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 2px 0 #5a3200) drop-shadow(0 0 10px rgba(255, 190, 80, .35));
+}
+.logo { width: 36px; height: 36px; filter: drop-shadow(0 2px 4px #000a); }
+.wallet span {
+  background: linear-gradient(180deg, rgba(43, 53, 86, .92), rgba(23, 29, 48, .92));
+  border: 1px solid #0a0e1a; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12), 0 2px 6px #0006;
+  border-radius: 8px; padding: 5px 12px 5px 8px; display: inline-flex; align-items: center; gap: 6px;
+}
+.wallet b { color: var(--gold); font-size: 14px; }
+
+/* 메이플 창: 이중 테두리 + 제목 줄 느낌 */
+.battle, .manage, .modal-box, .tab-lock > div, .tut-card {
+  background: linear-gradient(180deg, var(--win-top) 0, #242c48 38px, var(--win-bot) 100%);
+  border: 1px solid #070a14;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14), inset 0 1px 0 rgba(255, 255, 255, .25), 0 10px 30px rgba(0, 0, 0, .55);
+  border-radius: 12px;
+}
+.battle-top { background: linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, 0)); border-bottom: 1px solid #0a0e1a; box-shadow: 0 1px 0 rgba(255, 255, 255, .06); }
+.stage-name b { color: var(--gold); text-shadow: 0 1px 0 #000; }
+.mode-tag { background: linear-gradient(180deg, #5b6ea3, #3b4874); border: 1px solid #0c1020; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25); }
+.mode-tag.chaos { background: linear-gradient(180deg, #a35ad6, #6b2a9c); }
+.canvas-wrap { margin: 0 8px; border: 1px solid #070a14; border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1); }
+.battle-bottom { padding: 10px 12px; }
+
+/* 진행 게이지: 메이플 경험치 바 */
+.gauge { height: 16px; border-radius: 3px; border: 1px solid #05070d; background: linear-gradient(180deg, #1b1f2c, #2b3144); box-shadow: inset 0 1px 2px #000; }
+#gaugeFill { background: linear-gradient(180deg, #fff3b0 0%, #ffd23f 45%, #f0a500 55%, #ffcf3a 100%); box-shadow: 0 0 6px rgba(255, 210, 60, .6); }
+#gaugeText { font-size: 11px; line-height: 14px; text-shadow: 0 1px 1px #000, 0 0 2px #000; }
+
+/* 버튼 */
+.btn {
+  background: linear-gradient(180deg, #6577a6 0%, #46557f 48%, #3a4770 52%, #4a5a86 100%);
+  border: 1px solid #10162a; color: #fff; border-radius: 7px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 2px 0 #0b0f1c;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .5); transition: filter .12s, transform .05s;
+}
+.btn:hover:not(:disabled) { filter: brightness(1.12); border-color: #10162a; }
+.btn:active:not(:disabled) { transform: translateY(1px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25); }
+.btn.primary {
+  background: linear-gradient(180deg, #ffe8a3 0%, #ffc54d 45%, #f5a011 55%, #ffb62e 100%);
+  border: 1px solid #8a4b00; color: #4a2600; text-shadow: 0 1px 0 rgba(255, 240, 200, .8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 2px 0 #6b3a00;
+}
+.btn.danger { background: linear-gradient(180deg, #e2686b 0%, #c43c42 50%, #b52e35 52%, #cf4a50 100%); border-color: #5c0e12; color: #fff; }
+.btn.ghost { background: transparent; box-shadow: none; border: 1px solid var(--line); }
+.btn:disabled { filter: grayscale(.6) brightness(.8); opacity: .6; }
+.chip {
+  background: linear-gradient(180deg, #4a5a86, #2f3a5c); border: 1px solid #0b0f1c; border-radius: 7px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 2px 0 #090c17; padding: 5px 12px;
+}
+.chip.on { background: linear-gradient(180deg, #ffe8a3, #f5a011); color: #4a2600; border-color: #8a4b00; text-shadow: none; }
+.ov-btn { background: linear-gradient(180deg, rgba(60, 74, 116, .85), rgba(26, 32, 52, .85)); border: 1px solid #070a14; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25), 0 3px 8px #0008; border-radius: 10px; }
+
+/* 탭: 메이플 UI 탭 */
+.tabs { background: linear-gradient(180deg, rgba(255, 255, 255, .06), transparent); border-bottom: 1px solid #070a14; box-shadow: 0 1px 0 rgba(255, 255, 255, .08); padding: 8px 8px 0; gap: 3px; }
+.tabs button {
+  color: #b7c1de; background: linear-gradient(180deg, #2f3a5c, #232b45); border: 1px solid #0b0f1c; border-bottom: 0;
+  border-radius: 8px 8px 0 0; padding: 8px 13px 7px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+}
+.tabs button:hover { color: #fff; }
+.tabs button.on { color: #4a2600; background: linear-gradient(180deg, #ffe8a3, #ffc54d 60%, #f5a011); border-color: #8a4b00; text-shadow: 0 1px 0 rgba(255, 240, 200, .8); }
+.subtabs { background: rgba(5, 8, 18, .35); border-bottom: 1px solid #070a14; }
+.subtabs > button.on { color: var(--gold); border-bottom-color: var(--accent); }
+
+/* 카드 · 용병 */
+.merc, .detail, .status, .sslot, .sk, .stg, .auto-grid .detail {
+  background: linear-gradient(180deg, #2a3352, #1e2540);
+  border: 1px solid #0b0f1c; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08);
+}
+.merc { border-radius: 10px; }
+.merc-head b { color: var(--gold); font-size: 15px; }
+.avatar { background: radial-gradient(circle at 50% 35%, #4b5a88, #1b2238); border: 1px solid #070a14; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .2); }
+.lvbar { height: 9px; border-radius: 2px; border: 1px solid #05070d; background: #1b1f2c; }
+.lvbar div { background: linear-gradient(180deg, #fff3b0, #ffd23f 45%, #f0a500 55%, #ffcf3a); }
+.stats span { color: #aeb8d8; }
+.stats b { color: #fff; }
+.sslot.filled { border-color: #8a4b00; background: linear-gradient(180deg, #4a3b1a, #2e2614); box-shadow: inset 0 0 0 1px rgba(255, 215, 122, .35); }
+.sk.on { border-color: #8a4b00; box-shadow: inset 0 0 0 1px rgba(255, 215, 122, .45); }
+.squadcp { font-size: 15px; }
+.squadcp b, .cpb, .cpline b { color: var(--gold); text-shadow: 0 1px 0 #000; }
+
+/* 아이템 슬롯: 메이플 인벤토리 칸 */
+.item, .eslot {
+  background: radial-gradient(circle at 50% 40%, #3a4566 0%, #1a2036 75%);
+  border: 1px solid #070a14; border-radius: 6px;
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, .18), inset -1px -1px 0 rgba(0, 0, 0, .5);
+}
+.item:hover, .eslot:hover { box-shadow: inset 0 0 0 1px #ffd77a, 0 0 8px rgba(255, 215, 122, .35); }
+.g-rare { box-shadow: inset 0 0 0 2px #4aa3ff, inset 1px 1px 0 rgba(255, 255, 255, .2); }
+.g-epic { box-shadow: inset 0 0 0 2px #b46cff, inset 1px 1px 0 rgba(255, 255, 255, .2); }
+.g-unique { box-shadow: inset 0 0 0 2px #ffc21f, inset 1px 1px 0 rgba(255, 255, 255, .2); }
+.g-legendary { box-shadow: inset 0 0 0 2px #5dea6a, inset 1px 1px 0 rgba(255, 255, 255, .2); }
+.item.sel { outline: 2px solid #fff; outline-offset: 1px; }
+.item .tier, .eslot .tier { color: #fff; font-size: 11px; text-shadow: 0 0 2px #000, 0 1px 0 #000; }
+.detail .name { color: var(--gold); font-size: 15px; }
+.detail .pot { background: rgba(5, 8, 18, .45); border: 1px solid #070a14; }
+
+/* 표 */
+table.t th { color: var(--gold); border-bottom: 1px solid #070a14; background: rgba(255, 255, 255, .04); }
+table.t td { border-bottom: 1px solid rgba(255, 255, 255, .06); }
+table.t tr:nth-child(even) td { background: rgba(255, 255, 255, .02); }
+
+/* 맵 */
+.stg { border-radius: 6px; }
+.stg.clear { box-shadow: inset 0 0 0 1px rgba(93, 234, 106, .45); }
+.stg.front { box-shadow: inset 0 0 0 2px #ffc54d, 0 0 10px rgba(255, 197, 77, .4); }
+.stg.cur { background: linear-gradient(180deg, #3f6aa8, #284a7c); }
+.region h4 { color: var(--gold); }
+
+/* 입력 */
+select, .text, input[type=number] { background: #121829; border: 1px solid #070a14; box-shadow: inset 0 1px 2px #000; color: var(--text); border-radius: 6px; font-family: inherit; }
+input[type=range] { accent-color: #f5a011; }
+
+/* 알림 · 모달 */
+.toast { background: rgba(10, 12, 20, .9); border: 1px solid #8a4b00; color: #ffe8a3; box-shadow: 0 6px 20px #000a; font-weight: 700; }
+.modal { background: rgba(4, 6, 14, .7); backdrop-filter: blur(2px); }
+.modal-box h3 { color: var(--gold); }
+.foot { color: #7e89ab; }
+h3 { color: #fff; }
