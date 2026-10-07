@@ -40,6 +40,14 @@ def save_png(data, name):
 
 if __name__ == '__main__':
     os.makedirs(ICON, exist_ok=True)
+    # 바닥에 떨어진 메소: 금액 단계별 4종 × 회전 4프레임
+    for k in range(4):
+        for f in range(4):
+            try:
+                v = wz(f'Item/Special/0900.img/0900000{k}/iconRaw/{f}').get('value')
+                save_png(base64.b64decode(v), f'meso{k}_{f}')
+            except Exception as e:  # noqa
+                print('meso', k, f, 'FAIL', e)
     for name, src in ICONS.items():
         try:
             if isinstance(src, tuple):

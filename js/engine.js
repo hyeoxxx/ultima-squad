@@ -453,7 +453,7 @@
     const exp = expPerKill(b.mode, b.idx) * (isStageBoss ? R.stageBossExp : isRegionBoss ? 30 : 1) * expMult(st);
     for (const c of Object.keys(b.mercs)) gainExp(st, c, exp, b.events);
     const g = D.goldPerKill(b.mode, b.idx) * (isStageBoss ? R.stageBossGold : 1);
-    if (g) { const gg = Math.round(g * goldMult(st)); st.gold += gg; b.goldGained = (b.goldGained || 0) + gg; }
+    if (g) { const gg = Math.round(g * goldMult(st)); st.gold += gg; b.goldGained = (b.goldGained || 0) + gg; b.events.push({ t: 'meso', v: gg, x: mon.x }); }
     // 드롭 (온라인 전용)
     if (online) {
       const range = D.dropRange(b.mode, b.idx);
@@ -461,11 +461,11 @@
         const chance = isRegionBoss ? 1 : isStageBoss ? R.stageBossEquip : R.equipDrop * (1 + (st.util.drop + bonus(st, 'drop')) / 100);
         if (rand() < chance) {
           const it = makeItem(st, rollDropTier(range));
-          if (addItem(st, it)) b.events.push({ t: 'drop', item: it });
+          if (addItem(st, it)) b.events.push({ t: 'drop', item: it, x: mon.x });
         }
       }
-      if (rand() < (b.mode === 'chaos' ? R.cubeChaos : R.cubeNormal) * (1 + bonus(st, 'cube') / 100)) { st.cubes++; b.events.push({ t: 'cube' }); }
-      if (b.mode === 'chaos' && rand() < R.smallChaosCoin) { st.smallChaosCoin++; b.events.push({ t: 'coin' }); }
+      if (rand() < (b.mode === 'chaos' ? R.cubeChaos : R.cubeNormal) * (1 + bonus(st, 'cube') / 100)) { st.cubes++; b.events.push({ t: 'cube', x: mon.x }); }
+      if (b.mode === 'chaos' && rand() < R.smallChaosCoin) { st.smallChaosCoin++; b.events.push({ t: 'coin', x: mon.x }); }
     }
     if (isStageBoss || isRegionBoss) st.stats.bossKills++;
   }
@@ -505,7 +505,7 @@
     for (const c of Object.keys(b.mercs)) gainExp(st, c, exp, b.events);
     const range = D.dropRange(b.mode, b.idx) || [1, 1];
     let items = 0;
-    for (let i = 0; i < BOX_ITEMS[g]; i++) { const it = makeItem(st, rollDropTier(range)); if (addItem(st, it)) { items++; b.events.push({ t: 'drop', item: it }); } }
+    for (let i = 0; i < BOX_ITEMS[g]; i++) { const it = makeItem(st, rollDropTier(range)); if (addItem(st, it)) { items++; b.events.push({ t: 'drop', item: it, x: box.x }); } }
     let gold = 0, cubes = 0;
     if (b.mode !== 'chaos') {
       gold = Math.round(D.goldPerKill(b.mode, b.idx) * 200 * gm * goldMult(st));

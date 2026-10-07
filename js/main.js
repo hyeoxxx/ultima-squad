@@ -61,7 +61,7 @@
       } else if (e.t === 'dmg') { if (e.mob) AS.sfx('mob', String(e.mob), 'Damage', 0.5, 110); }
       else if (e.t === 'kill') { if (e.mob) AS.sfx('mob', String(e.mob), 'Die', 0.7, 80); }
       else if (e.t === 'levelup') { if (!AS.sfx('game', 'LevelUp', null, 0.9)) { beep(660, 0.12, 'triangle'); setTimeout(() => beep(880, 0.12, 'triangle'), 120); } }
-      else if (e.t === 'drop') { if (!AS.sfx('game', 'PickUpItem', null, 0.7, 120)) beep(1200, 0.08, 'sine'); }
+      else if (e.t === 'drop') { /* 획득음은 캐릭터에게 흡수될 때 */ }
       else if (e.t === 'down') { if (!AS.sfx('game', 'Tombstone', null, 0.8)) beep(160, 0.3, 'sawtooth'); }
       else if (e.t === 'firstclear') AS.sfx('game', 'QuestClear', null, 0.8);
       else if (e.t === 'box') AS.sfx('game', 'EnchantSuccess', null, 0.8);
@@ -75,6 +75,7 @@
     AS.preloadSounds(keys);
   }
   AS.onAudioReady(preloadBattleSounds);
+  RD.onPickup = () => AS.sfx('game', 'PickUpItem', null, 0.6, 70);
   function syncVolume() {
     const a = st.audio;
     AS.vol.master = a.master / 100;

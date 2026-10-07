@@ -13,6 +13,7 @@
   const monHit = {};   // 몬스터 피격 시각
   const corpses = [];  // 사망 애니메이션
   const lastX = {};    // 몬스터 이동 감지
+  const drops = [];  // 바닥에 떨어진 아이템/메소
   const floats = []; // 데미지 숫자
   const fx = [];     // 스킬 이펙트
   let flash = null;  // 극딜기 화면 연출
@@ -25,6 +26,8 @@
         const y = GROUND - 60 - Math.random() * 20;
         floats.push({ x: e.x + (Math.random() * 30 - 15), y, v: e.v, crit: e.crit, life: 0.9, kind: 'dmg' });
         monHit[e.id] = performance.now();
+      } else if (e.t === 'meso' || e.t === 'drop' || e.t === 'cube' || e.t === 'coin') {
+        spawnDrop(e);
       } else if (e.t === 'kill') {
         if (e.mob && A.mobMeta[e.mob] && A.mobMeta[e.mob].die) corpses.push({ mob: e.mob, kind: e.kind, x: e.x, y: e.kind === 'mob' ? GROUND + 4 - e.y * 3 : GROUND + 4, start: performance.now() });
       } else if (e.t === 'hurt' || e.t === 'heal') {
@@ -102,6 +105,63 @@
       ctx.drawImage(im, -fr.ox, -fr.oy);
       ctx.restore();
     }
+  }
+
+  // ───────── 드롭 / 흡수 ─────────
+  function spawnDrop(e) {
+    if (e.x == null) return;
+    let kind = 'item', src = null, tier = 0;
+    if (e.t === 'meso') { kind = 'meso'; tier = e.v < 60 ? 0 : e.v < 400 ? 1 : e.v < 2000 ? 2 : 3; }
+    else if (e.t === 'drop') src = A.iconSrc(e.item);
+    else if (e.t === 'cube') src = 'assets/icons/cube.png';
+    else src = 'assets/icons/chaos_coin.png';
+    if (drops.length > 70) drops.splice(0, drops.length - 70);
+    drops.push({ kind, src, tier, x: e.x + (Math.random() * 40 - 20), y: GROUND - 50, vx: Math.random() * 120 - 60, vy: -300 - Math.random() * 80, state: 'fall', t0: performance.now(), rot: 0 });
+  }
+  function dropImg(d, now) {
+    if (d.kind === 'meso') return A.img(`assets/icons/meso${d.tier}_${Math.floor(now / 130 + d.t0) % 4}.png`);
+    return A.img(d.src);
+  }
+  function drawDrops(ctx, b, dt) {
+    if (!drops.length) return;
+    const now = performance.now();
+    const floor = GROUND + 2;
+    // 화면 안의 몬스터를 다 잡으면 떨어진 것들을 앞에 선 용병에게 흡수
+    // 웨이브가 바뀌었거나(새 몬스터 등장), 화면에 남은 몬스터가 없거나, 스테이지가 끝나면 흡수
+    const waveKey = b.spawned + (b.bossSpawned ? 1000 : 0);
+    const newWave = drawDrops.wave !== undefined && drawDrops.wave !== waveKey;
+    drawDrops.wave = waveKey;
+    const alive = b.monsters.some((m) => m.hp > 0 && m.kind !== 'box' && m.x < 990);
+    const front = ['war', 'arch', 'mage'].map((c) => b.mercs[c]).find((m) => m && m.alive) || Object.values(b.mercs)[0];
+    if (newWave || !alive || b.done) drawDrops.until = now + 900; // 막 떨어지던 것도 착지하면 같이 흡수
+    if (now < (drawDrops.until || 0) && front) {
+      let k = 0;
+      for (const d of drops) if (d.state === 'rest') { d.state = 'pull'; d.p0 = { x: d.x, y: d.y }; d.tp = now + (k++) * 35; }
+    }
+    let picked = 0;
+    for (let i = drops.length - 1; i >= 0; i--) {
+      const d = drops[i];
+      if (d.state === 'fall') {
+        d.vy += 1100 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.rot += dt * 12;
+        if (d.y >= floor) { d.y = floor; d.state = 'rest'; d.rest = now; }
+      } else if (d.state === 'pull' && now >= d.tp) {
+        const el = Math.min(1, (now - d.tp) / 380), e = el * el;
+        const tx = front ? front.x : 300, ty = GROUND - 40;
+        d.x = d.p0.x + (tx - d.p0.x) * e;
+        d.y = d.p0.y + (ty - d.p0.y) * e - Math.sin(el * Math.PI) * 40;
+        if (el >= 1) { drops.splice(i, 1); picked++; continue; }
+      }
+      const im = dropImg(d, now);
+      if (!im) continue;
+      const bob = d.state === 'rest' ? Math.sin((now - d.rest) / 250) * 3 - 3 : 0;
+      ctx.save();
+      ctx.translate(d.x, d.y + bob - im.height / 2);
+      if (d.state === 'fall') ctx.rotate(Math.sin(d.rot) * 0.4);
+      if (d.state === 'pull') ctx.globalAlpha = 0.9;
+      ctx.drawImage(im, -im.width / 2, -im.height / 2);
+      ctx.restore();
+    }
+    if (picked && G.USRender.onPickup) G.USRender.onPickup(picked);
   }
 
   function bg(ctx, info) {
@@ -401,6 +461,7 @@
     bg(ctx, b.info);
     ctx.imageSmoothingEnabled = false;
     drawCorpses(ctx);
+    drawDrops(ctx, b, dt);
     for (const m of b.monsters) drawMonster(ctx, b, m, t);
     for (const c of ['mage', 'arch', 'war']) if (b.mercs[c]) drawMerc(ctx, st, b, b.mercs[c], t);
     drawFx(ctx, dt);
@@ -409,7 +470,7 @@
     drawBossBar(ctx, b);
     drawFlash(ctx, dt);
   }
-  function clearFx() { floats.length = 0; fx.length = 0; corpses.length = 0; sfx.length = 0; flash = null; }
+  function clearFx() { floats.length = 0; fx.length = 0; corpses.length = 0; sfx.length = 0; drops.length = 0; flash = null; }
 
-  G.USRender = { render, pushEvents, clearFx, AVATAR, WEAPON_ICON, avatarStage };
+  G.USRender = { render, pushEvents, clearFx, AVATAR, WEAPON_ICON, avatarStage, _drops: drops };
 })(window);
