@@ -251,3 +251,6 @@ body.pip .pip-info .po-drops { bottom: 38px; }
 .tab-lock[hidden] { display: none; }
 .tab-lock > div { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; text-align: center; max-width: 420px; }
 .tab-lock p { color: var(--muted); }
+
+.item.eq { background: rgba(245, 158, 11, .12); }
+.item .eqm { position: absolute; right: 2px; top: 1px; font-size: 10px; font-weight: 900; color: #1c1206; background: #f59e0b; border-radius: 3px; padding: 0 3px; line-height: 13px; }

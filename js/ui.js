@@ -30,7 +30,7 @@
     if (ctx && G.USAuto && ctx.st.inventory.includes(it) && G.USAuto.isUpgrade(ctx.st, it)) extra += ' up';
     return `<div class="item ${g ? 'g-' + g : ''} ${extra}" data-item="${it.id}" title="${esc(US.itemName(it))}">
       <span class="tier">${it.tier}</span>${icon(it)}<span class="cls">${CLS_ICON[it.cls]}</span>
-      ${it.isNew ? '<span class="new"></span>' : ''}${it.lock ? '<span class="lock">🔒</span>' : ''}${extra.includes(' up') ? '<span class="upm">▲</span>' : ''}${ui.view.sort === 'cp' && ['inv', 'pot', 'synth', 'dis'].includes(ui.tab) ? `<span class="cpv">${G.USAuto.itemPower(ctx.st, it).toLocaleString("ko-KR")}</span>` : ''}</div>`;
+      ${it.isNew ? '<span class="new"></span>' : ''}${it.lock ? '<span class="lock">🔒</span>' : ''}${extra.includes(' up') ? '<span class="upm">▲</span>' : ''}${/(^|\s)eq(\s|$)/.test(extra) ? '<span class="eqm">E</span>' : ''}${ui.view.sort === 'cp' && ['inv', 'pot', 'synth', 'dis'].includes(ui.tab) ? `<span class="cpv">${G.USAuto.itemPower(ctx.st, it).toLocaleString("ko-KR")}</span>` : ''}</div>`;
   }
   function potLines(it) {
     if (!it.pot.length) return '<div class="muted small">잠재능력 없음</div>';
@@ -123,11 +123,14 @@
     return `<nav class="subtabs">${VIEW_CLS.map(([val, name]) => `<button class="${v.cls === val ? 'on' : ''}" data-view="cls:${val}">${name} <small>${n(val)}</small></button>`).join('')}
       <span class="sub-right">${sel('slot', VIEW_SLOT.map(([k, nm]) => [k, k === 'all' ? '부위: 전체' : nm]))}${sel('sort', VIEW_SORT.map(([k, nm]) => [k, '정렬: ' + nm]))}</span></nav>`;
   }
+  // 영입한 용병이 착용 중인 장비
+  const equippedItems = () => D.CLASSES.filter((c) => ctx.st.mercs[c].owned).flatMap((c) => D.SLOTS.map((sl) => ctx.st.mercs[c].equip[sl]).filter(Boolean));
   // 탭별로 하위 탭에 셀 장비 목록
   function viewSource(tab) {
     const st = ctx.st;
     if (tab === 'pot') return [...st.inventory, ...D.CLASSES.flatMap((c) => D.SLOTS.map((sl) => st.mercs[c].equip[sl]).filter(Boolean))].filter((it) => it.tier >= 2);
     if (tab === 'dis') return st.inventory.filter((x) => !x.lock);
+    if (tab === 'inv') return [...st.inventory, ...equippedItems()];
     return st.inventory;
   }
   function view(list) {
@@ -148,12 +151,13 @@
     return `<div class="inv-layout"><div>
       <div class="row" style="margin-bottom:8px"><b>인벤토리 ${st.inventory.length} / ${st.invSize}</b>
         <button class="btn sm" data-act="seenAll">새 표시 지우기</button></div>
-      <div class="grid">${sortedInv().map((it) => itemCell(it, ui.sel === it.id ? 'sel' : '')).join('') || '<p class="muted">장비가 없어요. 몬스터를 처치하면 일정 확률로 장비를 얻어요 (접속 중에만).</p>'}</div>
+      <div class="grid">${view(equippedItems()).map((it) => itemCell(it, 'eq' + (ui.sel === it.id ? ' sel' : ''))).join('')}${sortedInv().map((it) => itemCell(it, ui.sel === it.id ? 'sel' : '')).join('')}</div>
+      ${st.inventory.length ? '' : '<p class="muted small">인벤토리가 비어 있어요. 몬스터를 처치하면 일정 확률로 장비를 얻어요 (접속 중에만).</p>'}
       <hr><div class="row"><b>인벤토리 확장</b>
         ${nextCost ? `<span class="small muted">다음 칸 ${fmt(nextCost)} 골드</span><button class="btn sm" data-act="expand" data-n="1">+1칸</button><button class="btn sm" data-act="expand" data-n="10">+10칸</button>` : '<span class="muted">최대</span>'}</div>
     </div>
     <div class="detail">${sel ? itemDetail(sel, { compare: true }) + `<div class="row" style="margin-top:10px">
-        ${inInv ? `<button class="btn primary" data-act="equip">장착</button>` : ''}
+        ${inInv ? `<button class="btn primary" data-act="equip">장착</button>` : `<button class="btn" data-act="unequipSel">장착 해제</button>`}
         <button class="btn" data-act="lock">${sel.lock ? '잠금 해제' : '🔒 잠금'}</button>
         ${inInv ? `<button class="btn danger" data-act="disOne" ${sel.lock ? 'disabled' : ''}>분해 (${fmt(D.TIERS[sel.tier].dis)}G)</button>` : ''}
         ${sel.tier >= 2 ? `<button class="btn" data-act="toPot">잠재 재설정</button>` : ''}</div>` : '<p class="muted">장비를 누르면 정보가 나와요.</p>'}</div></div>`;
@@ -342,6 +346,9 @@
     return `<h3>기록</h3><table class="t">
       <tr><td>시작한 지</td><td>${days}일</td></tr><tr><td>처치한 몬스터</td><td>${fmt(st.stats.kills)}</td></tr>
       <tr><td>처치한 보스</td><td>${fmt(st.stats.bossKills)}</td></tr><tr><td>에스페시아 상자</td><td>${st.stats.boxes}</td></tr></table>
+      <hr><h3>🎁 에스페시아 상자 1회 초기화</h3>
+      <p class="small muted">상자가 너무 멀리 생겨서 못 깨던 버그 보상이에요. 오늘 소환 기록을 지워서 한 번 더 소환할 수 있게 해요. 세이브당 1번만 쓸 수 있어요.</p>
+      <button class="btn ${st.boxResetUsed ? '' : 'primary'}" data-act="boxReset" ${st.boxResetUsed ? 'disabled' : ''}>${st.boxResetUsed ? '이미 사용했어요' : '상자 소환 1회 초기화'}</button>
       <hr><h3>세이브</h3><p class="small muted">진행 기록은 이 브라우저(localStorage)에 저장돼요. 다른 기기로 옮기려면 내보내기 코드를 복사해서 불러오기에 붙여넣으세요.</p>
       <div class="row"><button class="btn" data-act="export">내보내기</button><button class="btn" data-act="import">불러오기</button><button class="btn danger" data-act="reset">처음부터 다시</button></div>
       <hr><h3>도움말</h3><ul class="small muted">
@@ -452,6 +459,11 @@
     const act = t.dataset.act;
     switch (act) {
       case 'recruit': if (res(US.recruit(st, t.dataset.cls), `${D.CLASS_NAME[t.dataset.cls]} 영입 완료! 자동으로 전투에 배치됩니다`)) ctx.onRoster(); break;
+      case 'boxReset':
+        if (st.boxResetUsed) break;
+        if (st.boxDate !== US.today(Date.now())) { toast('오늘은 아직 상자를 소환하지 않았어요. 소환한 뒤에 쓰세요'); break; }
+        st.boxDate = null; st.boxResetUsed = true; ctx.save(); toast('상자를 다시 소환할 수 있어요!'); break;
+      case 'unequipSel': { const it = US.findItem(st, ui.sel); if (it && res(US.unequipItem(st, it.cls, it.slot), '장착 해제')) { b && US.refreshMercStats(st, b); } break; }
       case 'equip': if (ui.sel) { const it = US.findItem(st, ui.sel); if (res(US.equipItem(st, ui.sel), `${D.CLASS_NAME[it.cls]}에게 장착했어요`)) { b && US.refreshMercStats(st, b); } } break;
       case 'lock': { const it = US.findItem(st, ui.sel); if (it) { it.lock = !it.lock; ctx.save(); } break; }
       case 'disOne': { const r = US.dismantle(st, [ui.sel]); toast(`분해 완료 +${fmt(r.gold)} 골드`); ui.sel = null; ctx.save(); break; }
