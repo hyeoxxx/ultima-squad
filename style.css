@@ -195,3 +195,15 @@ body.pip .pip-info { display: block; padding: 4px 8px 6px; font-size: 12px; bord
 
 .auto-grid > div > label.chk { display: flex; gap: 6px; width: 100%; margin: 6px 0; }
 .auto-grid .chk input { flex: none; }
+
+.viewbar { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin: 4px 0 10px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+.seg button { background: var(--panel2); border: 0; border-right: 1px solid var(--line); padding: 5px 10px; cursor: pointer; font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.seg button:last-child { border-right: 0; }
+.seg button.on { background: #f59e0b; color: #1c1206; }
+.seg button small { opacity: .7; font-size: 10.5px; }
+.item .cpv { position: absolute; left: 0; right: 0; bottom: -1px; text-align: center; font-size: 9.5px; font-weight: 800; color: #fde68a; text-shadow: 0 1px 2px #000; }
+.cpline { margin-top: 6px; font-size: 12.5px; color: #fde68a; }
+.cpb { font-size: 12px; color: #fde68a; font-weight: 700; }
+.squadcp { margin: 0 0 10px; font-size: 14px; color: #fde68a; }
+.squadcp b { font-size: 18px; }

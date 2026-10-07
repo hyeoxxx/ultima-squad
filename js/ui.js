@@ -11,7 +11,7 @@
   const CLS_ICON = { war: '🛡️', arch: '🏹', mage: '🔮' };
   const POT_KEY_NAME = { hp: 'HP', def: '방어력', atk: '공격력', matk: '마력', atkp: '공격력%', matkp: '마력%', crit: '크확', critdmg: '크뎀', speed: '공속', cdr: '쿨감', rage: '분노', love: '사랑', invinc: '무적', ignore: '데미지 무시' };
 
-  const ui = { tab: 'merc', sel: null, skillSel: null, synth: new Set(), potItem: null, cube: null, disTier: 0, mapMode: null, dirty: true, invSort: 'new' };
+  const ui = { tab: 'merc', sel: null, skillSel: null, synth: new Set(), potItem: null, cube: null, disTier: 0, mapMode: null, dirty: true, view: { cls: 'all', slot: 'all', sort: 'new' } };
   let ctx = null; // { st, getBattle, onStageChange, save }
 
   function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
@@ -30,7 +30,7 @@
     if (ctx && G.USAuto && ctx.st.inventory.includes(it) && G.USAuto.isUpgrade(ctx.st, it)) extra += ' up';
     return `<div class="item ${g ? 'g-' + g : ''} ${extra}" data-item="${it.id}" title="${esc(US.itemName(it))}">
       <span class="tier">${it.tier}</span>${icon(it)}<span class="cls">${CLS_ICON[it.cls]}</span>
-      ${it.isNew ? '<span class="new"></span>' : ''}${it.lock ? '<span class="lock">🔒</span>' : ''}${extra.includes(' up') ? '<span class="upm">▲</span>' : ''}</div>`;
+      ${it.isNew ? '<span class="new"></span>' : ''}${it.lock ? '<span class="lock">🔒</span>' : ''}${extra.includes(' up') ? '<span class="upm">▲</span>' : ''}${ui.view.sort === 'cp' && ['inv', 'pot', 'synth', 'dis'].includes(ui.tab) ? `<span class="cpv">${G.USAuto.itemPower(ctx.st, it).toLocaleString("ko-KR")}</span>` : ''}</div>`;
   }
   function potLines(it) {
     if (!it.pot.length) return '<div class="muted small">잠재능력 없음</div>';
@@ -57,6 +57,7 @@
     }
     return `<div class="row">${icon(it)}<div class="name">${esc(US.itemName(it))}</div></div>
       <div class="small muted">${D.CLASS_NAME[it.cls]} ${D.SLOT_NAME[it.slot]} · ${it.tier}단계 · ${D.QUALITY_NAME[it.q]} · Lv.${T.req} 이상</div>
+      <div class="cpline">⚔ 장비 전투력 <b>${G.USAuto.itemPower(st, it).toLocaleString("ko-KR")}</b></div>
       <div style="margin-top:6px">${base}</div>
       <div class="pot">${potLines(it)}</div>${cmp}`;
   }
@@ -67,7 +68,7 @@
   panels.merc = function () {
     const st = ctx.st, b = ctx.getBattle();
     const slots = US.skillSlots(st);
-    return `<div class="mercs">${D.CLASSES.map((c) => {
+    return `<div class="squadcp">스쿼드 전투력 <b>${G.USAuto.squadPower(st).toLocaleString("ko-KR")}</b></div><div class="mercs">${D.CLASSES.map((c) => {
       const m = st.mercs[c];
       if (!m.owned) {
         const r = D.RECRUIT[c];
@@ -82,7 +83,7 @@
       const learned = D.SKILL_LIST(c);
       return `<div class="merc">
         <div class="merc-head"><div class="avatar t${stage}">${avatarImg(c, m)}</div>
-          <div style="flex:1"><b>${D.CLASS_NAME[c]}</b> <span class="muted">Lv.${m.lv}${m.lv >= D.MAX_LEVEL ? ' (MAX)' : ''}</span>
+          <div style="flex:1"><b>${D.CLASS_NAME[c]}</b> <span class="muted">Lv.${m.lv}${m.lv >= D.MAX_LEVEL ? ' (MAX)' : ''}</span> <span class="cpb">⚔ ${G.USAuto.mercPower(st, c).toLocaleString("ko-KR")}</span>
           <div class="lvbar"><div style="width:${pct.toFixed(1)}%"></div></div><div class="small muted">EXP ${pct.toFixed(2)}%</div></div></div>
         <div class="stats">
           <div><span>${c === 'mage' ? '마력' : '공격력'}</span><b>${fmt(s.atkTotal)}</b></div><div><span>최대 HP</span><b>${fmt(s.hp)}</b></div>
@@ -111,13 +112,26 @@
     <p class="small muted">스킬에 마우스를 올리면 설명이 나와요. 스킬을 해제하면 3초 동안 다시 장착할 수 없고, 전투 중 새로 장착한 스킬은 재사용 대기시간이 지나야 사용돼요.</p>`;
   };
 
-  function sortedInv() {
-    const inv = ctx.st.inventory.slice();
-    if (ui.invSort === 'tier') inv.sort((a, b) => b.tier - a.tier || a.cls.localeCompare(b.cls) || D.SLOTS.indexOf(a.slot) - D.SLOTS.indexOf(b.slot));
-    else if (ui.invSort === 'cls') inv.sort((a, b) => a.cls.localeCompare(b.cls) || b.tier - a.tier);
-    else inv.reverse();
-    return inv;
+  // 장비 목록 보기: 직업/부위 하위 탭 + 정렬 (인벤토리·잠재능력·합성·분해 공용)
+  const VIEW_CLS = [['all', '전체'], ['war', '🛡️ 전사'], ['arch', '🏹 궁수'], ['mage', '🔮 마법사']];
+  const VIEW_SLOT = [['all', '전체'], ['weapon', '무기'], ['hat', '모자'], ['glove', '장갑'], ['shoe', '신발']];
+  const VIEW_SORT = [['new', '최근 획득'], ['tier', '단계'], ['cp', '전투력']];
+  function viewBar(list) {
+    const v = ui.view;
+    const count = (k, val) => list.filter((it) => val === 'all' || it[k] === val).length;
+    const group = (key, opts, field) => `<div class="seg">${opts.map(([val, name]) =>
+      `<button class="${v[key] === val ? 'on' : ''}" data-view="${key}:${val}">${name}${field ? ` <small>${count(field, val)}</small>` : ''}</button>`).join('')}</div>`;
+    return `<div class="viewbar">${group('cls', VIEW_CLS, 'cls')}${group('slot', VIEW_SLOT, 'slot')}<span class="muted small">정렬</span>${group('sort', VIEW_SORT)}</div>`;
   }
+  function view(list) {
+    const v = ui.view;
+    const out = list.filter((it) => (v.cls === 'all' || it.cls === v.cls) && (v.slot === 'all' || it.slot === v.slot));
+    if (v.sort === 'tier') out.sort((a, b) => b.tier - a.tier || b.q - a.q);
+    else if (v.sort === 'cp') { const cp = new Map(out.map((it) => [it, G.USAuto.itemPower(ctx.st, it)])); out.sort((a, b) => cp.get(b) - cp.get(a)); }
+    else out.reverse();
+    return out;
+  }
+  const sortedInv = () => view(ctx.st.inventory.slice());
 
   panels.inv = function () {
     const st = ctx.st;
@@ -126,9 +140,8 @@
     const inInv = sel && st.inventory.includes(sel);
     return `<div class="inv-layout"><div>
       <div class="row" style="margin-bottom:8px"><b>인벤토리 ${st.inventory.length} / ${st.invSize}</b>
-        <span class="muted small">정렬</span>
-        <select id="invSort">${[['new', '최근 획득'], ['tier', '단계'], ['cls', '직업']].map(([v, n]) => `<option value="${v}" ${ui.invSort === v ? 'selected' : ''}>${n}</option>`).join('')}</select>
         <button class="btn sm" data-act="seenAll">새 표시 지우기</button></div>
+      ${viewBar(st.inventory)}
       <div class="grid">${sortedInv().map((it) => itemCell(it, ui.sel === it.id ? 'sel' : '')).join('') || '<p class="muted">장비가 없어요. 몬스터를 처치하면 일정 확률로 장비를 얻어요 (접속 중에만).</p>'}</div>
       <hr><div class="row"><b>인벤토리 확장</b>
         ${nextCost ? `<span class="small muted">다음 칸 ${fmt(nextCost)} 골드</span><button class="btn sm" data-act="expand" data-n="1">+1칸</button><button class="btn sm" data-act="expand" data-n="10">+10칸</button>` : '<span class="muted">최대</span>'}</div>
@@ -142,7 +155,8 @@
 
   panels.pot = function () {
     const st = ctx.st;
-    const items = [...D.CLASSES.flatMap((c) => D.SLOTS.map((s) => st.mercs[c].equip[s]).filter(Boolean)), ...st.inventory].filter((it) => it.tier >= 2);
+    const all = [...st.inventory, ...D.CLASSES.flatMap((c) => D.SLOTS.map((s) => st.mercs[c].equip[s]).filter(Boolean))].filter((it) => it.tier >= 2);
+    const items = view(all);
     const it = ui.potItem && US.findItem(st, ui.potItem);
     let right = '<p class="muted">잠재능력을 재설정할 장비를 고르세요. (착용 중인 장비 포함, 2단계 이상)</p>';
     if (it) {
@@ -156,6 +170,7 @@
     return `<div class="inv-layout"><div>
       <div class="row" style="margin-bottom:8px"><b>훈련용 큐브 ${st.cubes}개</b><button class="btn sm" data-act="buyCube" data-n="1">1개 구매 (2만G)</button><button class="btn sm" data-act="buyCube" data-n="10">10개 구매 (20만G)</button></div>
       <p class="small muted">재설정해도 등급은 오르지 않고, 결과 중 전/후를 골라 적용할 수 있어요. 같은 잠재가 다시 나올 수도 있어요.</p>
+      ${viewBar(all)}
       <div class="grid">${items.map((x) => itemCell(x, ui.potItem === x.id ? 'sel' : '')).join('') || '<p class="muted">2단계 이상 장비가 없어요.</p>'}</div>
     </div><div class="detail">${right}</div></div>`;
   };
@@ -170,19 +185,26 @@
       <span>선택 <b>${selItems.length}</b> / 9 ${tier ? `(${tier}단계)` : ''}</span>
       <button class="btn primary" data-act="synth" ${selItems.length === 9 ? '' : 'disabled'}>합성</button>
       <button class="btn" data-act="synthAll">가능한 만큼 전부 합성</button></div>
+      ${viewBar(st.inventory)}
       <div class="grid">${sortedInv().map((it) => itemCell(it, (ui.synth.has(it.id) ? 'sel ' : '') + ((tier && it.tier !== tier) || it.lock ? 'dim' : ''))).join('') || '<p class="muted">장비가 없어요.</p>'}</div>`;
   };
 
   panels.dis = function () {
     const st = ctx.st;
-    const list = st.inventory.filter((x) => !x.lock && (ui.disTier === 0 || x.tier <= ui.disTier));
+    const list = disTargets();
     const gold = list.reduce((s, x) => s + D.TIERS[x.tier].dis, 0);
     return `<div class="row" style="margin-bottom:8px"><b>장비 분해</b><span class="small muted">잠긴 장비는 분해되지 않아요</span></div>
       <div class="row" style="margin-bottom:10px">대상 <select id="disTier"><option value="0">전체</option>${[1, 2, 3, 4, 5, 6, 7].map((t) => `<option value="${t}" ${ui.disTier === t ? 'selected' : ''}>${t}단계 이하</option>`).join('')}</select>
         <span>${list.length}개 → 💰 <b>${fmt(gold)}</b></span><button class="btn danger" data-act="disAll" ${list.length ? '' : 'disabled'}>분해</button></div>
       <table class="t"><tr><th>단계</th>${[1, 2, 3, 4, 5, 6, 7, 8].map((t) => `<th>${t}</th>`).join('')}</tr><tr><td class="muted">분해 골드</td>${[1, 2, 3, 4, 5, 6, 7, 8].map((t) => `<td>${fmt(D.TIERS[t].dis)}</td>`).join('')}</tr></table>
-      <div class="grid" style="margin-top:10px">${list.map((it) => itemCell(it)).join('')}</div>`;
+      <div style="margin-top:10px">${viewBar(st.inventory.filter((x) => !x.lock))}</div>
+      <div class="grid">${list.map((it) => itemCell(it)).join('')}</div>
+      <p class="small muted">위에서 고른 직업·부위의 장비만 분해 대상이에요.</p>`;
   };
+
+  function disTargets() {
+    return view(ctx.st.inventory.filter((x) => !x.lock && (ui.disTier === 0 || x.tier <= ui.disTier)));
+  }
 
   panels.map = function () {
     const st = ctx.st;
@@ -338,8 +360,9 @@
 
   $('panel').addEventListener('click', (e) => {
     const st = ctx.st, b = ctx.getBattle();
-    const t = e.target.closest('[data-act],[data-item],[data-eq],[data-sslot],[data-skill],[data-stage]');
+    const t = e.target.closest('[data-act],[data-item],[data-eq],[data-sslot],[data-skill],[data-stage],[data-view]');
     if (!t) return;
+    if (t.dataset.view) { const [k, v] = t.dataset.view.split(':'); ui.view[k] = v; return render(); }
     if (t.dataset.item) {
       const id = +t.dataset.item;
       if (ui.tab === 'inv') { ui.sel = id; const it = US.findItem(st, id); if (it) it.isNew = false; }
@@ -420,7 +443,7 @@
         break;
       }
       case 'disAll': {
-        const list = st.inventory.filter((x) => !x.lock && (ui.disTier === 0 || x.tier <= ui.disTier)).map((x) => x.id);
+        const list = disTargets().map((x) => x.id);
         if (!confirm(`${list.length}개 장비를 분해할까요?`)) return;
         const r = US.dismantle(st, list); toast(`${r.n}개 분해 +${fmt(r.gold)} 골드`); ctx.save(); break;
       }

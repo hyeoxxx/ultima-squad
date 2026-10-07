@@ -210,5 +210,23 @@
     return ev;
   }
 
-  G.USAuto = { power, powerWith, upgradeRatio, isUpgrade, canWear, between, during, recommendSkills, CUBE_WEAPON, CUBE_ARMOR };
+  // 표시용 전투력 (메이플처럼 큰 숫자로)
+  const CP_SCALE = 10;
+  const mercPower = (st, cls) => Math.round(power(st, cls) * CP_SCALE);
+  const squadPower = (st) => US.ownedMercs(st).reduce((s, c) => s + mercPower(st, c), 0);
+  // 장비 전투력: 해당 부위가 비어 있을 때 대비 이 장비를 꼈을 때 오르는 전투력
+  // (영입 전이거나 레벨이 모자라면 착용 레벨 기준으로 계산)
+  function itemPower(st, it) {
+    const m = st.mercs[it.cls];
+    const own = m.owned, lv = m.lv, prev = m.equip[it.slot];
+    m.owned = true; m.lv = Math.max(lv, D.TIERS[it.tier].req);
+    m.equip[it.slot] = null;
+    const p0 = power(st, it.cls);
+    m.equip[it.slot] = it;
+    const p1 = power(st, it.cls);
+    m.owned = own; m.lv = lv; m.equip[it.slot] = prev;
+    return Math.max(0, Math.round((p1 - p0) * CP_SCALE));
+  }
+
+  G.USAuto = { mercPower, squadPower, itemPower, power, powerWith, upgradeRatio, isUpgrade, canWear, between, during, recommendSkills, CUBE_WEAPON, CUBE_ARMOR };
 })(typeof window !== 'undefined' ? window : globalThis);
