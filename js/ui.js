@@ -8,7 +8,8 @@
   const $ = (id) => document.getElementById(id);
   const fmt = US.fmt;
   const SLOT_ICON = { weapon: '⚔️', hat: '🎩', glove: '🧤', shoe: '👢' };
-  const CLS_ICON = { war: '🛡️', arch: '🏹', mage: '🔮' };
+  const CLS_ICON = { war: '<img class="ci" src="assets/items/war_1_weapon.png" alt="">', arch: '<img class="ci" src="assets/items/arch_1_weapon.png" alt="">', mage: '<img class="ci" src="assets/items/mage_1_weapon.png" alt="">' };
+  const MI = (name) => `<img class="mi" src="assets/icons/${name}.png" alt="">`;
   const POT_KEY_NAME = { hp: 'HP', def: '방어력', atk: '공격력', matk: '마력', atkp: '공격력%', matkp: '마력%', crit: '크확', critdmg: '크뎀', speed: '공속', cdr: '쿨감', rage: '분노', love: '사랑', invinc: '무적', ignore: '데미지 무시' };
 
   const ui = { tab: 'merc', sel: null, skillSel: null, synth: new Set(), potItem: null, cube: null, disTier: 0, mapMode: null, dirty: true, view: { cls: 'all', slot: 'all', sort: 'new' } };
@@ -30,7 +31,7 @@
     if (ctx && G.USAuto && ctx.st.inventory.includes(it) && G.USAuto.isUpgrade(ctx.st, it)) extra += ' up';
     return `<div class="item ${g ? 'g-' + g : ''} ${extra}" data-item="${it.id}" title="${esc(US.itemName(it))}">
       <span class="tier">${it.tier}</span>${icon(it)}<span class="cls">${CLS_ICON[it.cls]}</span>
-      ${it.isNew ? '<span class="new"></span>' : ''}${it.lock ? '<span class="lock">🔒</span>' : ''}${extra.includes(' up') ? '<span class="upm">▲</span>' : ''}${/(^|\s)eq(\s|$)/.test(extra) ? '<span class="eqm">E</span>' : ''}${ui.view.sort === 'cp' && ['inv', 'pot', 'synth', 'dis'].includes(ui.tab) ? `<span class="cpv">${G.USAuto.itemPower(ctx.st, it).toLocaleString("ko-KR")}</span>` : ''}</div>`;
+      ${it.isNew ? '<span class="new"></span>' : ''}${it.lock ? '<span class="lock">잠금</span>' : ''}${extra.includes(' up') ? '<span class="upm">▲</span>' : ''}${/(^|\s)eq(\s|$)/.test(extra) ? '<span class="eqm">E</span>' : ''}${ui.view.sort === 'cp' && ['inv', 'pot', 'synth', 'dis'].includes(ui.tab) ? `<span class="cpv">${G.USAuto.itemPower(ctx.st, it).toLocaleString("ko-KR")}</span>` : ''}</div>`;
   }
   function potLines(it) {
     if (!it.pot.length) return '<div class="muted small">잠재능력 없음</div>';
@@ -57,7 +58,7 @@
     }
     return `<div class="row">${icon(it)}<div class="name">${esc(US.itemName(it))}</div></div>
       <div class="small muted">${D.CLASS_NAME[it.cls]} ${D.SLOT_NAME[it.slot]} · ${it.tier}단계 · ${D.QUALITY_NAME[it.q]} · Lv.${T.req} 이상</div>
-      <div class="cpline">⚔ 장비 전투력 <b>${G.USAuto.itemPower(st, it).toLocaleString("ko-KR")}</b></div>
+      <div class="cpline">장비 전투력 <b>${G.USAuto.itemPower(st, it).toLocaleString("ko-KR")}</b></div>
       <div style="margin-top:6px">${base}</div>
       <div class="pot">${potLines(it)}</div>${cmp}`;
   }
@@ -75,7 +76,7 @@
         const ok = US.isCleared(st, 'normal', r.need) && (c !== 'mage' || st.mercs.arch.owned);
         return `<div class="merc"><div class="merc-head"><div class="avatar" style="filter:grayscale(1)">${RD.AVATAR[c][0]}</div><div><b>${D.CLASS_NAME[c]}</b><div class="small muted">미영입</div></div></div>
           <p class="small muted">${US.stageInfo('normal', r.need).label} 스테이지 클리어${c === 'mage' ? ' + 궁수 영입' : ''} 후 영입 가능</p>
-          <button class="btn primary" data-act="recruit" data-cls="${c}" ${ok && st.gold >= r.cost ? '' : 'disabled'}>💰 ${fmt(r.cost)} 골드로 영입</button></div>`;
+          <button class="btn primary" data-act="recruit" data-cls="${c}" ${ok && st.gold >= r.cost ? '' : 'disabled'}>${MI('meso')} ${fmt(r.cost)} 메소로 영입</button></div>`;
       }
       const s = US.mercStats(st, c);
       const stage = RD.avatarStage(m.lv);
@@ -98,7 +99,7 @@
           const id = m.skills[i];
           const locked = i >= slots;
           const sel = ui.skillSel && ui.skillSel[0] === c && ui.skillSel[1] === i;
-          if (locked) return `<div class="sslot locked">🔒 ${i === 1 ? '1-10' : '2-10'} 클리어 후 확장</div>`;
+          if (locked) return `<div class="sslot locked">${i === 1 ? '1-10' : '2-10'} 클리어 후 확장</div>`;
           return `<div class="sslot ${id ? 'filled' : ''} ${sel ? 'sel' : ''}" data-sslot="${c}:${i}">${id ? `${skIcon(D.SKILLS[id])} ${D.SKILLS[id].name}` : '비어 있음'}</div>`;
         }).join('')}</div>
         <div class="sklist">${learned.map((sk) => {
@@ -113,7 +114,7 @@
   };
 
   // 장비 목록 보기: 직업/부위 하위 탭 + 정렬 (인벤토리·잠재능력·합성·분해 공용)
-  const VIEW_CLS = [['all', '전체'], ['war', '🛡️ 전사'], ['arch', '🏹 궁수'], ['mage', '🔮 마법사']];
+  const VIEW_CLS = [['all', '전체'], ['war', `${CLS_ICON.war} 전사`], ['arch', `${CLS_ICON.arch} 궁수`], ['mage', `${CLS_ICON.mage} 마법사`]];
   const VIEW_SLOT = [['all', '전체'], ['weapon', '무기'], ['hat', '모자'], ['glove', '장갑'], ['shoe', '신발']];
   const VIEW_SORT = [['new', '최근 획득'], ['tier', '단계'], ['cp', '전투력']];
   function viewBar(list) {
@@ -154,12 +155,12 @@
       <div class="grid">${view(equippedItems()).map((it) => itemCell(it, 'eq' + (ui.sel === it.id ? ' sel' : ''))).join('')}${sortedInv().map((it) => itemCell(it, ui.sel === it.id ? 'sel' : '')).join('')}</div>
       ${st.inventory.length ? '' : '<p class="muted small">인벤토리가 비어 있어요. 몬스터를 처치하면 일정 확률로 장비를 얻어요 (접속 중에만).</p>'}
       <hr><div class="row"><b>인벤토리 확장</b>
-        ${nextCost ? `<span class="small muted">다음 칸 ${fmt(nextCost)} 골드</span><button class="btn sm" data-act="expand" data-n="1">+1칸</button><button class="btn sm" data-act="expand" data-n="10">+10칸</button>` : '<span class="muted">최대</span>'}</div>
+        ${nextCost ? `<span class="small muted">다음 칸 ${fmt(nextCost)} 메소</span><button class="btn sm" data-act="expand" data-n="1">+1칸</button><button class="btn sm" data-act="expand" data-n="10">+10칸</button>` : '<span class="muted">최대</span>'}</div>
     </div>
     <div class="detail">${sel ? itemDetail(sel, { compare: true }) + `<div class="row" style="margin-top:10px">
         ${inInv ? `<button class="btn primary" data-act="equip">장착</button>` : `<button class="btn" data-act="unequipSel">장착 해제</button>`}
-        <button class="btn" data-act="lock">${sel.lock ? '잠금 해제' : '🔒 잠금'}</button>
-        ${inInv ? `<button class="btn danger" data-act="disOne" ${sel.lock ? 'disabled' : ''}>분해 (${fmt(D.TIERS[sel.tier].dis)}G)</button>` : ''}
+        <button class="btn" data-act="lock">${sel.lock ? '잠금 해제' : '잠금'}</button>
+        ${inInv ? `<button class="btn danger" data-act="disOne" ${sel.lock ? 'disabled' : ''}>분해 (${fmt(D.TIERS[sel.tier].dis)} 메소)</button>` : ''}
         ${sel.tier >= 2 ? `<button class="btn" data-act="toPot">잠재 재설정</button>` : ''}</div>` : '<p class="muted">장비를 누르면 정보가 나와요.</p>'}</div></div>`;
   };
 
@@ -175,10 +176,10 @@
         const fake = Object.assign({}, it, { pot: ui.cube.after });
         right += `<hr><div class="row" style="align-items:stretch"><div class="pot" style="flex:1"><b class="small">BEFORE</b>${potLines(it)}</div><div class="pot" style="flex:1"><b class="small">AFTER</b>${potLines(fake)}</div></div>
           <div class="row"><button class="btn" data-act="cubeKeep">BEFORE 유지</button><button class="btn primary" data-act="cubeApply">AFTER 적용</button></div>`;
-      } else right += `<button class="btn primary" data-act="cube" ${st.cubes > 0 ? '' : 'disabled'}>🧊 훈련용 큐브 사용 (보유 ${st.cubes})</button>`;
+      } else right += `<button class="btn primary" data-act="cube" ${st.cubes > 0 ? '' : 'disabled'}>${MI('cube')} 훈련용 큐브 사용 (보유 ${st.cubes})</button>`;
     }
     return `<div class="inv-layout"><div>
-      <div class="row" style="margin-bottom:8px"><b>훈련용 큐브 ${st.cubes}개</b><button class="btn sm" data-act="buyCube" data-n="1">1개 구매 (2만G)</button><button class="btn sm" data-act="buyCube" data-n="10">10개 구매 (20만G)</button></div>
+      <div class="row" style="margin-bottom:8px"><b>훈련용 큐브 ${st.cubes}개</b><button class="btn sm" data-act="buyCube" data-n="1">1개 구매 (2만 메소)</button><button class="btn sm" data-act="buyCube" data-n="10">10개 구매 (20만 메소)</button></div>
       <p class="small muted">재설정해도 등급은 오르지 않고, 결과 중 전/후를 골라 적용할 수 있어요. 같은 잠재가 다시 나올 수도 있어요.</p>
       <h4 class="sec">착용 중</h4>
       <div class="grid">${worn.map((x) => itemCell(x, 'eq' + (x.tier < 2 ? ' dim' : '') + (ui.potItem === x.id ? ' sel' : ''))).join('') || '<p class="muted small">착용 중인 장비가 없어요.</p>'}</div>
@@ -207,8 +208,8 @@
     const gold = list.reduce((s, x) => s + D.TIERS[x.tier].dis, 0);
     return `<div class="row" style="margin-bottom:8px"><b>장비 분해</b><span class="small muted">잠긴 장비는 분해되지 않아요</span></div>
       <div class="row" style="margin-bottom:10px">대상 <select id="disTier"><option value="0">전체</option>${[1, 2, 3, 4, 5, 6, 7].map((t) => `<option value="${t}" ${ui.disTier === t ? 'selected' : ''}>${t}단계 이하</option>`).join('')}</select>
-        <span>${list.length}개 → 💰 <b>${fmt(gold)}</b></span><button class="btn danger" data-act="disAll" ${list.length ? '' : 'disabled'}>분해</button></div>
-      <table class="t"><tr><th>단계</th>${[1, 2, 3, 4, 5, 6, 7, 8].map((t) => `<th>${t}</th>`).join('')}</tr><tr><td class="muted">분해 골드</td>${[1, 2, 3, 4, 5, 6, 7, 8].map((t) => `<td>${fmt(D.TIERS[t].dis)}</td>`).join('')}</tr></table>
+        <span>${list.length}개 → ${MI('meso')} <b>${fmt(gold)}</b></span><button class="btn danger" data-act="disAll" ${list.length ? '' : 'disabled'}>분해</button></div>
+      <table class="t"><tr><th>단계</th>${[1, 2, 3, 4, 5, 6, 7, 8].map((t) => `<th>${t}</th>`).join('')}</tr><tr><td class="muted">분해 메소</td>${[1, 2, 3, 4, 5, 6, 7, 8].map((t) => `<td>${fmt(D.TIERS[t].dis)}</td>`).join('')}</tr></table>
       <div class="grid" style="margin-top:10px">${list.map((it) => itemCell(it)).join('')}</div>
       <p class="small muted">위에서 고른 직업·부위의 장비만 분해 대상이에요.</p>`;
   };
@@ -225,8 +226,8 @@
     const lb = US.offlineBase(st);
     return `<div class="row" style="margin-bottom:10px">
         <button class="btn ${mode === 'normal' ? 'primary' : ''}" data-act="mapMode" data-mode="normal">일반 모드</button>
-        <button class="btn ${mode === 'chaos' ? 'primary' : ''}" data-act="mapMode" data-mode="chaos" ${chaosOk ? '' : 'disabled'} title="${chaosOk ? '' : '일반 3-10 클리어 시 입장 가능'}">카오스 모드 ${chaosOk ? '' : '🔒'}</button>
-        <button class="chip ${st.repeat ? 'on' : ''}" data-act="repeat">🔁 반복 플레이 ${st.repeat ? 'ON' : 'OFF'}</button>
+        <button class="btn ${mode === 'chaos' ? 'primary' : ''}" data-act="mapMode" data-mode="chaos" ${chaosOk ? '' : 'disabled'} title="${chaosOk ? '' : '일반 3-10 클리어 시 입장 가능'}">카오스 모드 ${chaosOk ? '' : '(잠김)'}</button>
+        <button class="chip ${st.repeat ? 'on' : ''}" data-act="repeat">반복 플레이 ${st.repeat ? 'ON' : 'OFF'}</button>
       </div>
       <div class="regions">${[0, 1, 2].map((r) => `<div class="region"><h4>${r + 1}지역 · ${D.REGION_MAPS[r].map((m) => m.name).join(' / ')}</h4><div class="stages">${Array.from({ length: 10 }, (_, s) => {
         const idx = r * 10 + s;
@@ -234,7 +235,7 @@
         const can = US.canEnter(st, mode, idx);
         const cur = st.mode === mode && st.stage === idx;
         const cls = ['stg', cleared ? 'clear' : '', idx === front && !cleared ? 'front' : '', cur ? 'cur' : '', can ? '' : 'locked', s === 9 ? 'boss' : ''].join(' ');
-        return `<div class="${cls}" data-stage="${mode}:${idx}">${s === 9 ? '👑 ' : ''}${r + 1}-${s + 1}${cleared ? ' ✓' : ''}<small>권장 ${D.REC_LEVEL[mode][r][s]}</small></div>`;
+        return `<div class="${cls}" data-stage="${mode}:${idx}">${s === 9 ? '<span class="bossb">BOSS</span>' : ''}${r + 1}-${s + 1}${cleared ? ' ✓' : ''}<small>권장 ${D.REC_LEVEL[mode][r][s]}</small></div>`;
       }).join('')}</div></div>`).join('')}</div>
       <p class="small muted">클리어한 스테이지만 다시 입장할 수 있고, 보스 스테이지(10)는 최초 1회만 클리어할 수 있어요. 오프라인 보상 기준: <b>${lb ? `${lb.mode === 'chaos' ? '카오스 ' : ''}${US.stageInfo(lb.mode, lb.idx).label}` : '없음 (1-1을 먼저 클리어하세요)'}</b></p>
       ${chaosOk ? `<hr><div class="row"><b>작은 카오스 스쿼드 코인 ${st.smallChaosCoin}개</b><span class="small muted">카오스 모드 몬스터 처치 시 확률 획득</span>
@@ -247,14 +248,18 @@
       const next = US.utilNext(st, k);
       const needOk = !next || next.need == null || US.isCleared(st, 'normal', next.need);
       return `<tr><td><b>${U.name}</b></td><td>${U.fmt(st.util[k])}</td><td>${next ? `${U.fmt(next.v)}${next.need != null && !needOk ? ` <span class="small muted">(${US.stageInfo('normal', next.need).label} 클리어 필요)</span>` : ''}` : '<span class="muted">최대</span>'}</td>
-        <td>${next ? `<button class="btn sm ${st.gold >= next.cost && needOk ? 'primary' : ''}" data-act="util" data-k="${k}" ${st.gold >= next.cost && needOk ? '' : 'disabled'}>💰 ${fmt(next.cost)}</button>` : ''}</td></tr>`;
+        <td>${next ? `<button class="btn sm ${st.gold >= next.cost && needOk ? 'primary' : ''}" data-act="util" data-k="${k}" ${st.gold >= next.cost && needOk ? '' : 'disabled'}>${MI('meso')} ${fmt(next.cost)}</button>` : ''}</td></tr>`;
     }).join('');
     const nextCost = st.invSize < D.INV_MAX ? D.invSlotCost(st.invSize + 1) : null;
     return `<table class="t"><tr><th>유틸리티</th><th>현재</th><th>다음</th><th>가격</th></tr>${rows}
-      <tr><td><b>인벤토리 슬롯 확장</b></td><td>${st.invSize}칸</td><td>${nextCost ? `${st.invSize + 1}칸` : '<span class="muted">최대</span>'}</td><td>${nextCost ? `<button class="btn sm" data-act="expand" data-n="1" ${st.gold >= nextCost ? '' : 'disabled'}>💰 ${fmt(nextCost)}</button> <button class="btn sm" data-act="expand" data-n="10">+10</button>` : ''}</td></tr></table>
-      <p class="small muted">장비 드롭률 증가는 장비에만 적용돼요. 골드 획득량 증가는 오프라인 보상에도 적용돼요.</p>`;
+      <tr><td><b>인벤토리 슬롯 확장</b></td><td>${st.invSize}칸</td><td>${nextCost ? `${st.invSize + 1}칸` : '<span class="muted">최대</span>'}</td><td>${nextCost ? `<button class="btn sm" data-act="expand" data-n="1" ${st.gold >= nextCost ? '' : 'disabled'}>${MI('meso')} ${fmt(nextCost)}</button> <button class="btn sm" data-act="expand" data-n="10">+10</button>` : ''}</td></tr></table>
+      <p class="small muted">장비 드롭률 증가는 장비에만 적용돼요. 메소 획득량 증가는 오프라인 보상에도 적용돼요.</p>`;
   };
 
+  const UP_ICON = {
+    exp: MI('exp'), cexp: MI('exp'), hp: MI('hp'), chp: MI('hp'), offline: MI('clock'), drop: MI('gift'), cube: MI('cube'), gold: MI('meso'),
+    atk: '<img class="mi" src="assets/items/war_8_weapon.png" alt="">', catk: '<img class="mi" src="assets/items/arch_8_weapon.png" alt="">',
+  };
   panels.shop = function () {
     const st = ctx.st;
     const row = (u) => {
@@ -262,20 +267,20 @@
       const max = lv >= u.max;
       const cost = D.coinUpCost(u, lv);
       const have = u.cur === 'squad' ? st.squadCoin : st.chaosCoin;
-      return `<tr><td>${u.icon} <b>${u.name}</b></td><td>+${lv * u.per}${u.unit} <span class="small muted">(${lv}/${u.max})</span></td>
+      return `<tr><td>${UP_ICON[u.id]} <b>${u.name}</b></td><td>+${lv * u.per}${u.unit} <span class="small muted">(${lv}/${u.max})</span></td>
         <td>${max ? '<span class="muted">최대</span>' : `+${(lv + 1) * u.per}${u.unit}`}</td>
-        <td>${max ? '' : `<button class="btn sm ${have >= cost ? 'primary' : ''}" data-act="coinup" data-id="${u.id}" ${have >= cost ? '' : 'disabled'}>${u.cur === 'squad' ? '🟡' : '🟣'} ${fmt(cost)}</button>`}</td></tr>`;
+        <td>${max ? '' : `<button class="btn sm ${have >= cost ? 'primary' : ''}" data-act="coinup" data-id="${u.id}" ${have >= cost ? '' : 'disabled'}>${MI(u.cur === 'squad' ? 'squad_coin' : 'chaos_coin')} ${fmt(cost)}</button>`}</td></tr>`;
     };
     const ups = D.COIN_UP;
-    return `<div class="row" style="margin-bottom:10px"><span>🟡 스쿼드 코인 <b>${fmt(st.squadCoin)}</b></span><span>🟣 카오스 스쿼드 코인 <b>${fmt(st.chaosCoin)}</b></span></div>
-      <h3>🟡 스쿼드 코인 강화 <span class="small muted">일반 모드 최초 클리어 보상 (총 8,000개)</span></h3>
+    return `<div class="row" style="margin-bottom:10px"><span>${MI('squad_coin')} 스쿼드 코인 <b>${fmt(st.squadCoin)}</b></span><span>${MI('chaos_coin')} 카오스 스쿼드 코인 <b>${fmt(st.chaosCoin)}</b></span></div>
+      <h3>${MI('squad_coin')} 스쿼드 코인 강화 <span class="small muted">일반 모드 최초 클리어 보상 (총 8,000개)</span></h3>
       <table class="t"><tr><th>강화</th><th>현재</th><th>다음</th><th>가격</th></tr>${ups.filter((u) => u.cur === 'squad').map(row).join('')}</table>
-      <h3 style="margin-top:16px">🟣 카오스 스쿼드 코인 강화 <span class="small muted">카오스 몬스터 처치 시 작은 코인 → 맵 탭에서 이전</span></h3>
+      <h3 style="margin-top:16px">${MI('chaos_coin')} 카오스 스쿼드 코인 강화 <span class="small muted">카오스 몬스터 처치 시 작은 코인 → 맵 탭에서 이전</span></h3>
       <table class="t"><tr><th>강화</th><th>현재</th><th>다음</th><th>가격</th></tr>${ups.filter((u) => u.cur === 'chaos').map(row).join('')}</table>
-      <p class="small muted">현재 보너스: 경험치 +${US.bonus(st, 'exp')}% · 공격력/마력 +${US.bonus(st, 'atk')}% · HP +${US.bonus(st, 'hp')}% · 장비 드롭 +${US.bonus(st, 'drop')}% · 큐브 드롭 +${US.bonus(st, 'cube')}% · 골드 +${US.bonus(st, 'gold')}% · 오프라인 효율 +${US.bonus(st, 'offline')}%p</p>
+      <p class="small muted">현재 보너스: 경험치 +${US.bonus(st, 'exp')}% · 공격력/마력 +${US.bonus(st, 'atk')}% · HP +${US.bonus(st, 'hp')}% · 장비 드롭 +${US.bonus(st, 'drop')}% · 큐브 드롭 +${US.bonus(st, 'cube')}% · 메소 +${US.bonus(st, 'gold')}% · 오프라인 효율 +${US.bonus(st, 'offline')}%p</p>
       <hr><h3>훈장</h3>
-      <div class="row"><span>${st.medals.normal ? '🎖️' : '⬜'} 울티마 스쿼드 훈장 <span class="small muted">(일반 3-10 클리어)</span></span>
-      <span>${st.medals.chaos ? '🏅' : '⬜'} 울티마 베스트 스쿼드 훈장 <span class="small muted">(카오스 3-10 클리어)</span></span></div>`;
+      <div class="row"><span><img class="mi ${st.medals.normal ? '' : 'gray'}" src="assets/icons/medal.png" alt=""> 울티마 스쿼드 훈장 <span class="small muted">(일반 3-10 클리어)</span></span>
+      <span><img class="mi ${st.medals.chaos ? '' : 'gray'}" src="assets/icons/medal_best.png" alt=""> 울티마 베스트 스쿼드 훈장 <span class="small muted">(카오스 3-10 클리어)</span></span></div>`;
   };
 
   panels.auto = function () {
@@ -285,7 +290,7 @@
     const num = (k, min, max, step = 1) => `<input type="number" class="btn sm num" data-autov="${k}" value="${A[k]}" min="${min}" max="${max}" step="${step}">`;
     const r = ctx.sessionReport();
     const ph = (v) => fmt(v / r.hours);
-    const UTIL_NAME = { slots: '스킬 슬롯', gold: '골드 획득량', drop: '장비 드롭률', inv: '인벤토리', offline: '오프라인 시간' };
+    const UTIL_NAME = { slots: '스킬 슬롯', gold: '메소 획득량', drop: '장비 드롭률', inv: '인벤토리', offline: '오프라인 시간' };
     return `<div class="auto-grid"><div>
       <h3>장비</h3>
       ${chk('equip', '좋은 장비 자동 장착', '더 강해지는 장비가 들어오면 바로 교체')}
@@ -301,20 +306,20 @@
       <div class="sub">실패해서 아래 스테이지를 반복 중이면 ${num('retryMin', 1, 120)}분마다 다음 스테이지 재도전</div>
       ${chk('box', '에스페시아 상자 자동 소환', '하루 1회, 가능한 첫 타이밍에')}
       ${chk('skills', '스킬 자동 배치', '레벨업·보스 스테이지에 맞춰 추천 조합으로 (수동 배치를 덮어써요)')}
-      ${chk('recruit', '용병 자동 영입', '조건과 골드가 되면 바로')}
+      ${chk('recruit', '용병 자동 영입', '조건과 메소가 되면 바로')}
       ${chk('util', '유틸리티 자동 구매', '')}
       <div class="sub">순서: ${A.utilOrder.map((k, i) => `<span class="ord">${i + 1}. ${UTIL_NAME[k]} <button class="btn sm" data-act="ordUp" data-i="${i}" ${i ? '' : 'disabled'}>▲</button></span>`).join(' ')}
-        <div>인벤토리는 ${num('invTarget', 10, 256)}칸까지 · 영입할 골드는 남겨둬요</div></div>
+        <div>인벤토리는 ${num('invTarget', 10, 256)}칸까지 · 영입할 메소는 남겨둬요</div></div>
       <h3>알림</h3>
       ${chk('notifyFull', '인벤토리 가득 참')} ${chk('notifyBoss', '보스 스테이지 도달')} ${chk('notifyFirst', '최초 클리어')} ${chk('notifyCube', '큐브 목표 달성')}
       <button class="btn sm" data-act="askNotify">윈도우 알림 허용하기</button>
     </div>
     <div class="detail">
-      <h3>📊 이번 접속 리포트</h3>
+      <h3>이번 접속 리포트</h3>
       <div class="small muted">${new Date(r.at).toLocaleTimeString('ko-KR', { hour12: false })}부터 · ${Math.floor(r.hours)}시간 ${Math.round((r.hours % 1) * 60)}분</div>
       <table class="t">
         <tr><td>몬스터 처치</td><td><b>${fmt(r.kills)}</b> <span class="small muted">(시간당 ${ph(r.kills)})</span></td></tr>
-        <tr><td>획득 골드</td><td><b>${fmt(r.gold)}</b> <span class="small muted">(시간당 ${ph(r.gold)})</span></td></tr>
+        <tr><td>획득 메소</td><td><b>${fmt(r.gold)}</b> <span class="small muted">(시간당 ${ph(r.gold)})</span></td></tr>
         <tr><td>획득 장비</td><td><b>${r.items}</b>개</td></tr>
         <tr><td>에스페시아 상자</td><td>${r.boxes}회</td></tr>
         ${r.mercs.map((m) => `<tr><td>${D.CLASS_NAME[m.cls]}</td><td>Lv.${m.fromLv} → <b>Lv.${m.toLv}</b> <span class="small muted">EXP +${fmt(m.exp)} (시간당 ${ph(m.exp)})</span></td></tr>`).join('')}
@@ -329,16 +334,16 @@
     const sl = (k, label, icon) => `<div class="vrow"><span>${icon} ${label}</span><input type="range" min="0" max="100" step="5" value="${a[k]}" data-audio="${k}"><b>${a[k]}</b></div>`;
     const pm = ctx.st.pipMode;
     return `<div class="settings"><div>
-      <h3>🔊 사운드</h3>
-      ${sl('master', '전체 볼륨', '🔈')}
-      <div class="vrow"><span>🎵 배경음악</span><input type="range" min="0" max="100" step="5" value="${a.bgm}" data-audio="bgm"><b>${a.bgm}</b>
+      <h3>사운드</h3>
+      ${sl('master', '전체 볼륨', '')}
+      <div class="vrow"><span>배경음악</span><input type="range" min="0" max="100" step="5" value="${a.bgm}" data-audio="bgm"><b>${a.bgm}</b>
         <label class="chk inline"><input type="checkbox" data-audio="bgmOn" ${a.bgmOn ? 'checked' : ''}> 켜기</label></div>
-      ${sl('skill', '스킬 효과음', '⚔️')}
-      ${sl('mob', '몬스터 효과음', '🍄')}
-      ${sl('game', '게임 효과음 (레벨업·획득·알림)', '🔔')}
+      ${sl('skill', '스킬 효과음', '<img class="mi" src="assets/skills/aura_blade/icon.png" alt="">')}
+      ${sl('mob', '몬스터 효과음', '<img class="mi" src="assets/mobs/1210102/stand0.png" alt="">')}
+      ${sl('game', '게임 효과음 (레벨업·획득·알림)', MI('exp'))}
       <p class="small muted">브라우저 정책 때문에 페이지를 연 뒤 한 번 클릭해야 소리가 나기 시작해요.</p>
     </div><div>
-      <h3>📺 PIP 방식</h3>
+      <h3>PIP 방식</h3>
       <label class="radio"><input type="radio" name="pipMode" value="video" ${pm !== 'doc' ? 'checked' : ''}> <b>영상 PIP</b> <span class="small muted">유튜브 PIP처럼 창 상단 바가 없어요. 화면은 보기만 돼요 (상자·반복은 자동 기능으로).</span></label>
       <label class="radio"><input type="radio" name="pipMode" value="doc" ${pm === 'doc' ? 'checked' : ''}> <b>문서 PIP</b> <span class="small muted">PIP 창 안에서 버튼을 누를 수 있어요. 대신 크롬이 창 위에 주소 바를 항상 붙여요.</span></label>
     </div></div>`;
@@ -350,13 +355,13 @@
     return `<h3>기록</h3><table class="t">
       <tr><td>시작한 지</td><td>${days}일</td></tr><tr><td>처치한 몬스터</td><td>${fmt(st.stats.kills)}</td></tr>
       <tr><td>처치한 보스</td><td>${fmt(st.stats.bossKills)}</td></tr><tr><td>에스페시아 상자</td><td>${st.stats.boxes}</td></tr></table>
-      <hr><h3>🎁 에스페시아 상자 1회 초기화</h3>
+      <hr><h3>${MI('box')} 에스페시아 상자 1회 초기화</h3>
       <p class="small muted">상자가 너무 멀리 생겨서 못 깨던 버그 보상이에요. 오늘 소환 기록을 지워서 한 번 더 소환할 수 있게 해요. 세이브당 1번만 쓸 수 있어요.</p>
       <button class="btn ${st.boxResetUsed ? '' : 'primary'}" data-act="boxReset" ${st.boxResetUsed ? 'disabled' : ''}>${st.boxResetUsed ? '이미 사용했어요' : '상자 소환 1회 초기화'}</button>
       <hr><h3>세이브</h3><p class="small muted">진행 기록은 이 브라우저(localStorage)에 저장돼요. 다른 기기로 옮기려면 내보내기 코드를 복사해서 불러오기에 붙여넣으세요.</p>
       <div class="row"><button class="btn" data-act="export">내보내기</button><button class="btn" data-act="import">불러오기</button><button class="btn danger" data-act="reset">처음부터 다시</button></div>
       <hr><h3>도움말</h3><ul class="small muted">
-        <li>용병은 자동으로 싸워요. 탭이 다른 창에 가려져 있어도 접속 중으로 인정돼요. 탭을 닫으면 오프라인 보상(EXP·골드만)이 쌓여요 (기본 16시간).</li>
+        <li>용병은 자동으로 싸워요. 탭이 다른 창에 가려져 있어도 접속 중으로 인정돼요. 탭을 닫으면 오프라인 보상(EXP·메소만)이 쌓여요 (기본 16시간).</li>
         <li>스테이지를 클리어하면 자동으로 다음 스테이지로 넘어가요. 실패하면 한 단계 아래 스테이지를 반복해요.</li>
         <li>1-10 핑크빈은 체력을 회복해요 → 궁수 15레벨 「폭풍의 시」가 필요해요.</li>
         <li>2-10 악화된 조화의 정령은 전원 중독 → 마법사 「힐」+「헤븐즈 도어」로 버티세요.</li>
@@ -474,11 +479,11 @@
       case 'unequipSel': { const it = US.findItem(st, ui.sel); if (it && res(US.unequipItem(st, it.cls, it.slot), '장착 해제')) { b && US.refreshMercStats(st, b); } break; }
       case 'equip': if (ui.sel) { const it = US.findItem(st, ui.sel); if (res(US.equipItem(st, ui.sel), `${D.CLASS_NAME[it.cls]}에게 장착했어요`)) { b && US.refreshMercStats(st, b); } } break;
       case 'lock': { const it = US.findItem(st, ui.sel); if (it) { it.lock = !it.lock; ctx.save(); } break; }
-      case 'disOne': { const r = US.dismantle(st, [ui.sel]); toast(`분해 완료 +${fmt(r.gold)} 골드`); ui.sel = null; ctx.save(); break; }
+      case 'disOne': { const r = US.dismantle(st, [ui.sel]); toast(`분해 완료 +${fmt(r.gold)} 메소`); ui.sel = null; ctx.save(); break; }
       case 'toPot': ui.potItem = ui.sel; ui.tab = 'pot'; break;
       case 'seenAll': st.inventory.forEach((x) => (x.isNew = false)); st.unseenDrops = 0; break;
-      case 'expand': { const n = US.expandInv(st, +t.dataset.n); toast(n ? `인벤토리 ${n}칸 확장` : '골드가 부족해요'); ctx.save(); break; }
-      case 'buyCube': { const n = US.buyCubes(st, +t.dataset.n); toast(n ? `훈련용 큐브 ${n}개 구매` : '골드가 부족해요'); ctx.save(); break; }
+      case 'expand': { const n = US.expandInv(st, +t.dataset.n); toast(n ? `인벤토리 ${n}칸 확장` : '메소가 부족해요'); ctx.save(); break; }
+      case 'buyCube': { const n = US.buyCubes(st, +t.dataset.n); toast(n ? `훈련용 큐브 ${n}개 구매` : '메소가 부족해요'); ctx.save(); break; }
       case 'cube': { const r = US.cubeRoll(st, ui.potItem); if (r.ok) ui.cube = { id: ui.potItem, after: r.after }; else toast(r.why); ctx.save(); break; }
       case 'cubeApply': if (ui.cube) { US.cubeApply(st, ui.cube.id, ui.cube.after); b && US.refreshMercStats(st, b); ui.cube = null; toast('AFTER 잠재능력을 적용했어요'); ctx.save(); } break;
       case 'cubeKeep': ui.cube = null; break;
@@ -496,7 +501,7 @@
       case 'disAll': {
         const list = disTargets().map((x) => x.id);
         if (!confirm(`${list.length}개 장비를 분해할까요?`)) return;
-        const r = US.dismantle(st, list); toast(`${r.n}개 분해 +${fmt(r.gold)} 골드`); ctx.save(); break;
+        const r = US.dismantle(st, list); toast(`${r.n}개 분해 +${fmt(r.gold)} 메소`); ctx.save(); break;
       }
       case 'mapMode': ui.mapMode = t.dataset.mode; break;
       case 'repeat': st.repeat = !st.repeat; st.repeatReason = null; ctx.save(); ctx.onRepeat(); break;
@@ -534,10 +539,10 @@
     const h = Math.floor(r.secs / 3600), mi = Math.floor((r.secs % 3600) / 60);
     const ah = Math.floor(r.away / 3600), am = Math.floor((r.away % 3600) / 60);
     const rows = Object.entries(r.ups).map(([c, u]) => `<tr><td>${D.CLASS_NAME[c]}</td><td>Lv.${u.from} (${(u.fromPct * 100).toFixed(1)}%) → <b>Lv.${u.to}</b> (${(u.toPct * 100).toFixed(1)}%)</td></tr>`).join('');
-    modal(`<h3>🌙 오프라인 보상</h3>
+    modal(`<h3>${MI('clock')} 오프라인 보상</h3>
       <p>접속하지 않은 시간 ${ah}시간 ${am}분 중 <b>${h}시간 ${mi}분</b>이 정산됐어요. <span class="small muted">(최대 ${ctx.st.util.offline}시간)</span></p>
       <p class="small muted">기준 스테이지: ${r.base.mode === 'chaos' ? '카오스 ' : ''}${US.stageInfo(r.base.mode, r.base.idx).label}</p>
-      <table class="t"><tr><td>획득 골드</td><td>💰 <b>${fmt(r.gold)}</b></td></tr><tr><td>용병별 EXP</td><td>+${fmt(r.exp)}</td></tr>${rows}</table>
+      <table class="t"><tr><td>획득 메소</td><td>${MI('meso')} <b>${fmt(r.gold)}</b></td></tr><tr><td>용병별 EXP</td><td>+${fmt(r.exp)}</td></tr>${rows}</table>
       <p class="small muted">오프라인 중에는 장비·훈련용 큐브·작은 카오스 코인을 얻을 수 없어요.</p>
       <div class="row"><button class="btn primary" data-close>확인</button></div>`);
   }

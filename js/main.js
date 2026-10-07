@@ -127,7 +127,7 @@
       else if (e.t === 'firstclear') {
         const r = e.reward;
         ticker(`${e.mode === 'chaos' ? '카오스 ' : ''}${e.label} 최초 클리어!${r.coin ? ` 스쿼드 코인 +${r.coin}` : ''}${r.medal ? ' 훈장 교환권 획득!' : ''}`);
-        if (r.medal) UI.toast(r.medal === 'normal' ? '🎖️ 울티마 스쿼드 훈장 획득! 카오스 모드가 열렸어요' : '🏅 울티마 베스트 스쿼드 훈장 획득!');
+        if (r.medal) UI.toast(r.medal === 'normal' ? '울티마 스쿼드 훈장 획득! 카오스 모드가 열렸어요' : '울티마 베스트 스쿼드 훈장 획득!');
         dirty = true;
       } else if (e.t === 'box') { dirty = true; session.boxes++; session.gold += e.gold || 0; }
       else if (e.t === 'auto') { if (!e.quiet) ticker('⚙ ' + e.msg); if (e.notify) notify(e.notify, e.msg); dirty = true; }
@@ -264,9 +264,9 @@
     }).join('');
     const drops = recentDrops.slice(0, 4).map((it, i) => `<div class="pd" style="opacity:${1 - i * 0.2}"><img src="${G.USAssets.iconSrc(it)}"><span>${US.itemName(it)} <small>(${it.tier}단계)</small></span></div>`).join('');
     const html = `<div class="po-res">
-        <span class="${full ? 'bad' : ''}">🎒 ${st.inventory.length}/${st.invSize}${fresh ? ` <em>+${fresh}</em>` : ''}</span>
-        <span>💰 ${US.fmt(st.gold)}</span><span>🧊 ${st.cubes}</span>
-        <span class="${box ? 'dim' : 'ok'}">🎁 ${box ? '사용함' : '가능'}</span>
+        <span class="${full ? 'bad' : ''}"><img src="assets/icons/bag.png"> ${st.inventory.length}/${st.invSize}${fresh ? ` <em>+${fresh}</em>` : ''}</span>
+        <span><img src="assets/icons/meso.png"> ${US.fmt(st.gold)}</span><span><img src="assets/icons/cube.png"> ${st.cubes}</span>
+        <span class="${box ? 'dim' : 'ok'}"><img src="assets/icons/box.png"> ${box ? '사용함' : '가능'}</span>
       </div>
       <div class="po-mercs">${mercs}</div>
       ${drops ? `<div class="po-drops">${drops}</div>` : ''}`;
@@ -309,7 +309,7 @@
   const placeholder = document.createElement('div');
   placeholder.className = 'pip-placeholder';
   placeholder.hidden = true;
-  placeholder.innerHTML = '📺 전투 화면이 PIP 창에 떠 있어요. <button class="btn sm">원래대로</button>';
+  placeholder.innerHTML = '전투 화면이 PIP 창에 떠 있어요. <button class="btn sm">원래대로</button>';
   placeholder.querySelector('button').onclick = () => pipWin && pipWin.close();
   document.querySelector('.wrap').insertBefore(placeholder, $('manage'));
   $('btnPip').addEventListener('click', togglePip);
@@ -359,12 +359,16 @@
     // 상단 왼쪽: 자원
     const fresh = st.inventory.filter((i) => i.isNew).length;
     const box = st.boxDate === US.today(Date.now());
-    const parts = [[`🎒 ${st.inventory.length}/${st.invSize}${fresh ? ` +${fresh}` : ''}`, US.invFull(st) ? '#fca5a5' : '#fff'], [`💰 ${US.fmt(st.gold)}`, '#fff'], [`🧊 ${st.cubes}`, '#fff'], [`🎁 ${box ? '사용함' : '가능'}`, box ? '#cbd5e1' : '#86efac']];
+    const parts = [['bag', `${st.inventory.length}/${st.invSize}${fresh ? ` +${fresh}` : ''}`, US.invFull(st) ? '#fca5a5' : '#fff'], ['meso', US.fmt(st.gold), '#fff'], ['cube', String(st.cubes), '#fff'], ['box', box ? '사용함' : '가능', box ? '#cbd5e1' : '#86efac']];
     x.font = '700 15px "Malgun Gothic",sans-serif';
-    const widths = parts.map(([t]) => x.measureText(t).width);
-    hudBox(x, 12, 10, widths.reduce((a, b) => a + b, 0) + 18 * parts.length + 6, 30);
-    let lx = 24;
-    parts.forEach(([t, c], i) => { hudText(x, t, lx, 25, c); lx += widths[i] + 18; });
+    const widths = parts.map(([, t]) => x.measureText(t).width + 24);
+    hudBox(x, 12, 10, widths.reduce((a, b) => a + b, 0) + 14 * parts.length + 6, 30);
+    let lx = 20;
+    parts.forEach(([icon, t, c], i) => {
+      const im = AS.img(`assets/icons/${icon}.png`);
+      if (im) x.drawImage(im, lx, 15, 20, 20);
+      hudText(x, t, lx + 24, 25, c); lx += widths[i] + 14;
+    });
     // 상단 오른쪽: 스테이지
     const label = `${st.mode === 'chaos' ? '카오스' : '일반'} ${battle.info.label}  ${battle.info.map.name}`;
     x.font = '700 15px "Malgun Gothic",sans-serif';

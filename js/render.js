@@ -43,11 +43,11 @@
         if (!sk || !m) continue;
         (anim[e.cls] = anim[e.cls] || {}).atk = performance.now();
         if (spawnSkillFx(e, m)) {
-          if (sk.fx === 'ult') flash = { name: sk.name, color: sk.color, life: 1.0, icon: sk.icon, soft: true };
+          if (sk.fx === 'ult') flash = { name: sk.name, color: sk.color, life: 1.0, icon: sk.icon, soft: true, skill: sk.id };
           if (sk.type !== 'basic') fx.push({ type: 'label', color: '#fff', from: [m.x, GROUND - 40], pos: [], life: 0.7, max: 0.7, cls: e.cls, name: sk.name, icon: sk.icon });
           continue;
         }
-        if (sk.fx === 'ult') flash = { name: sk.name, color: sk.color, life: 1.4, icon: sk.icon };
+        if (sk.fx === 'ult') flash = { name: sk.name, color: sk.color, life: 1.4, icon: sk.icon, skill: sk.id };
         fx.push({ type: sk.fx || (sk.type === 'basic' ? 'basic' : sk.type), color: sk.color || '#fff', from: [m.x, GROUND - 40], pos: e.pos || [], life: sk.fx === 'ult' ? 1.2 : sk.spread ? sk.spread : 0.35, max: sk.fx === 'ult' ? 1.2 : sk.spread ? sk.spread : 0.35, cls: e.cls, name: sk.type !== 'basic' ? sk.name : null, icon: sk.icon });
       } else if (e.t === 'levelup') {
         const m = b.mercs[e.cls];
@@ -164,7 +164,9 @@
     // 그림자
     ctx.fillStyle = '#0005'; ctx.beginPath(); ctx.ellipse(m.x, GROUND + 6, 24, 6, 0, 0, Math.PI * 2); ctx.fill();
     if (!m.alive) {
-      ctx.globalAlpha = 0.4; emoji(ctx, '👻', m.x, y, 40); ctx.globalAlpha = 1;
+      const tomb = A.img('assets/icons/tomb.png');
+      if (tomb) ctx.drawImage(tomb, m.x - tomb.width * 0.6, GROUND + 4 - tomb.height * 1.2, tomb.width * 1.2, tomb.height * 1.2);
+      else { ctx.globalAlpha = 0.4; emoji(ctx, '👻', m.x, y, 40); ctx.globalAlpha = 1; }
       if (m.reviveAt) bar(ctx, m.x - 22, y - 62, 44, 5, 1 - (m.reviveAt - b.time) / D.RATES.reviveTime, '#a3a3a3');
       return;
     }
@@ -191,7 +193,9 @@
     if (m.cls === 'war' && merc.skills.slice(0, st.util.slots).includes('blessed_hammer')) {
       for (let i = 0; i < 5; i++) {
         const a = t * 2.5 + i * Math.PI * 2 / 5;
-        emoji(ctx, '🔨', m.x + Math.cos(a) * 42, y - 22 + Math.sin(a) * 14 + 8, 14);
+        const hm = A.img('assets/skills/blessed_hammer/ball' + (Math.floor(t * 12 + i) % 8) + '.png');
+        if (hm) ctx.drawImage(hm, m.x + Math.cos(a) * 46 - hm.width * 0.35, y - 30 + Math.sin(a) * 14 - hm.height * 0.35, hm.width * 0.7, hm.height * 0.7);
+        else emoji(ctx, '🔨', m.x + Math.cos(a) * 42, y - 22 + Math.sin(a) * 14 + 8, 14);
       }
     }
     bar(ctx, m.x - 24, y - 84, 48, 5, m.hp / m.s.hp, m.hp / m.s.hp < 0.3 ? '#f43f5e' : '#22c55e');
@@ -199,13 +203,26 @@
     ctx.fillText(`Lv.${merc.lv}`, m.x, y - 88);
     // 상태 아이콘
     const icons = [];
-    if (m.poison) icons.push('☠️');
-    if (m.buffs.soul_contract > b.time) icons.push('📜');
-    if (m.buffs.elemental_ghost > b.time) icons.push('👻');
-    if (b.prayUntil > b.time) icons.push('🙏');
-    if (m.rageUntil > b.time) icons.push('💢');
-    if (m.loveUntil > b.time) icons.push('💗');
-    icons.forEach((ic, i) => emoji(ctx, ic, m.x - (icons.length - 1) * 7 + i * 14, y - 100, 12));
+    if (m.poison) icons.push('assets/icons/poison.png');
+    if (m.buffs.soul_contract > b.time) icons.push('assets/skills/soul_contract/icon.png');
+    if (m.buffs.elemental_ghost > b.time) icons.push('assets/skills/elemental_ghost/icon.png');
+    if (b.prayUntil > b.time) icons.push('assets/skills/pray/icon.png');
+    if (m.rageUntil > b.time) icons.push('assets/icons/rage.png');
+    if (m.loveUntil > b.time) icons.push('assets/icons/heart.png');
+    icons.forEach((src, i) => { const im = A.img(src); if (im) ctx.drawImage(im, m.x - icons.length * 9 + i * 18, y - 112, 16, 16); });
+  }
+
+  // 기절: 머리 위에서 도는 별
+  function stars(ctx, x, y) {
+    const t = performance.now() / 300;
+    ctx.save(); ctx.fillStyle = '#fde047'; ctx.strokeStyle = '#a16207'; ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      const a = t + i * 2.1, sx = x + Math.cos(a) * 14, sy = y + Math.sin(a) * 4;
+      ctx.beginPath();
+      for (let k = 0; k < 10; k++) { const r = k % 2 ? 2.2 : 5, q = k * Math.PI / 5 - Math.PI / 2; ctx.lineTo(sx + Math.cos(q) * r, sy + Math.sin(q) * r); }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
   }
 
   function drawMonster(ctx, b, m, t) {
@@ -222,18 +239,21 @@
         const k = mobScale(m.mob, m.kind);
         ctx.drawImage(im, m.x - f.ox * k, gy - f.oy * k, im.width * k, im.height * k);
         const top = gy - Math.min(f.oy * k, 120);
-        if (m.stunUntil > b.time) emoji(ctx, '💫', m.x, top - 2, 16);
+        if (m.stunUntil > b.time) stars(ctx, m.x, top - 6);
         if (!big) bar(ctx, m.x - 22, top - 8, 44, 4, m.hp / m.maxHp, '#ef4444');
         return;
       }
     }
     if (m.kind === 'box') {
       const col = { rare: '#60a5fa', epic: '#c084fc', unique: '#fbbf24', legendary: '#4ade80' }[m.grade];
-      ctx.save(); ctx.shadowColor = col; ctx.shadowBlur = 25; emoji(ctx, '🎁', m.x, y, size); ctx.restore();
+      const bx = A.img('assets/icons/box.png');
+      ctx.save(); ctx.shadowColor = col; ctx.shadowBlur = 25;
+      if (bx) ctx.drawImage(bx, m.x - bx.width, y - bx.height * 2, bx.width * 2, bx.height * 2); else emoji(ctx, '🎁', m.x, y, size);
+      ctx.restore();
       ctx.fillStyle = col; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
       ctx.fillText(D.GRADE_NAME[m.grade], m.x, y - size - 4);
     } else emoji(ctx, m.icon, m.x, y, size);
-    if (m.stunUntil > b.time) emoji(ctx, '💫', m.x, y - size + 6, 16);
+    if (m.stunUntil > b.time) stars(ctx, m.x, y - size + 2);
     if (!big || m.kind === 'box') bar(ctx, m.x - size * 0.4, y - size - (m.kind === 'box' ? 0 : 2), size * 0.8, 4, m.hp / m.maxHp, '#ef4444');
   }
 
@@ -360,7 +380,10 @@
     ctx.globalAlpha = Math.min(1, k * 2);
     ctx.font = '900 34px "Malgun Gothic",sans-serif'; ctx.textAlign = 'center';
     ctx.lineWidth = 6; ctx.strokeStyle = '#000a';
-    ctx.strokeText(`${flash.icon} ${flash.name}`, W / 2, H / 2 - 40); ctx.fillStyle = '#fff'; ctx.fillText(`${flash.icon} ${flash.name}`, W / 2, H / 2 - 40);
+    const sic = flash.skill && A.img(`assets/skills/${flash.skill}/icon.png`);
+    const tw = ctx.measureText(flash.name).width;
+    if (sic) ctx.drawImage(sic, W / 2 - tw / 2 - 52, H / 2 - 64, 44, 44);
+    ctx.strokeText(flash.name, W / 2, H / 2 - 40); ctx.fillStyle = '#fff'; ctx.fillText(flash.name, W / 2, H / 2 - 40);
     ctx.restore();
   }
 

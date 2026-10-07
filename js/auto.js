@@ -204,7 +204,7 @@
     if (A.equip) for (const it of autoEquip(st)) ev.push({ t: 'auto', msg: `자동 장착: ${US.itemName(it)} (${it.tier}단계)` });
     if (A.sort) {
       const r = autoSort(st);
-      if (r.synth || r.dis) ev.push({ t: 'auto', msg: `인벤토리 자동 정리: 합성 ${r.synth}회, 분해 ${r.dis}개${r.gold ? ` (+${US.fmt(r.gold)} 골드)` : ''}` });
+      if (r.synth || r.dis) ev.push({ t: 'auto', msg: `인벤토리 자동 정리: 합성 ${r.synth}회, 분해 ${r.dis}개${r.gold ? ` (+${US.fmt(r.gold)} 메소)` : ''}` });
       if (A.equip && r.synth) for (const it of autoEquip(st)) ev.push({ t: 'auto', msg: `자동 장착: ${US.itemName(it)} (${it.tier}단계)` });
     }
     return ev;

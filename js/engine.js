@@ -449,7 +449,7 @@
     const isStageBoss = mon.kind === 'boss';
     const isRegionBoss = mon.kind === 'regionBoss';
     if (mon.kind === 'box') return onBoxKill(st, b, mon);
-    // EXP / 골드
+    // EXP / 메소
     const exp = expPerKill(b.mode, b.idx) * (isStageBoss ? R.stageBossExp : isRegionBoss ? 30 : 1) * expMult(st);
     for (const c of Object.keys(b.mercs)) gainExp(st, c, exp, b.events);
     const g = D.goldPerKill(b.mode, b.idx) * (isStageBoss ? R.stageBossGold : 1);
@@ -513,7 +513,7 @@
       st.gold += gold; st.cubes += cubes;
     }
     b.events.push({ t: 'box', grade: g, exp, items, gold, cubes });
-    b.events.push({ t: 'log', msg: `${D.GRADE_NAME[g]} 에스페시아 상자 처치! EXP +${fmt(exp)}${gold ? `, 골드 +${fmt(gold)}` : ''}${cubes ? `, 큐브 +${cubes}` : ''}${items ? `, 장비 ${items}개` : ''}` });
+    b.events.push({ t: 'log', msg: `${D.GRADE_NAME[g]} 에스페시아 상자 처치! EXP +${fmt(exp)}${gold ? `, 메소 +${fmt(gold)}` : ''}${cubes ? `, 큐브 +${cubes}` : ''}${items ? `, 장비 ${items}개` : ''}` });
   }
 
   // ───────── 전투 진행 ─────────
@@ -750,7 +750,7 @@
     if (st.mercs[cls].owned) return { ok: false };
     if (!isCleared(st, 'normal', r.need)) return { ok: false, why: `${stageInfo('normal', r.need).label} 스테이지를 클리어해야 해요` };
     if (cls === 'mage' && !st.mercs.arch.owned) return { ok: false, why: '궁수를 먼저 영입해야 해요' };
-    if (st.gold < r.cost) return { ok: false, why: '골드가 부족해요' };
+    if (st.gold < r.cost) return { ok: false, why: '메소가 부족해요' };
     st.gold -= r.cost;
     st.mercs[cls].owned = true;
     st.mercs[cls].skills = [null, null, null];
@@ -763,7 +763,7 @@
     const next = U.levels[lvIdx];
     if (!next) return { ok: false, why: '최대 단계예요' };
     if (next.need != null && !isCleared(st, 'normal', next.need)) return { ok: false, why: `${stageInfo('normal', next.need).label} 클리어 후 구매 가능` };
-    if (st.gold < next.cost) return { ok: false, why: '골드가 부족해요' };
+    if (st.gold < next.cost) return { ok: false, why: '메소가 부족해요' };
     st.gold -= next.cost;
     st.util[key] = next.v;
     return { ok: true };

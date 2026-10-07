@@ -189,7 +189,7 @@
     return s === 9 ? [8, 8] : s >= 3 ? [1, 8] : [1, 7];
   }
 
-  // 몬스터 처치 골드 (블로그 실측)
+  // 몬스터 처치 메소 (블로그 실측)
   function goldPerKill(mode, idx) {
     if (mode === 'chaos') return 0;
     const r = Math.floor(idx / 10), s = idx % 10;
@@ -212,7 +212,7 @@
     slots: { name: '스킬 슬롯 확장', levels: [{ v: 2, cost: 250000, need: 9 }, { v: 3, cost: 3000000, need: 19 }], fmt: (v) => `${v}칸` },
     offline: { name: '오프라인 누적 시간 증가', levels: [[17, 300000], [18, 400000], [19, 500000], [20, 800000], [21, 1000000], [22, 1500000], [23, 1700000], [24, 2000000]].map(([v, cost]) => ({ v, cost })), fmt: (v) => `${v}시간` },
     drop: { name: '장비 드롭률 증가', levels: [[5, 300000], [10, 600000], [15, 1000000], [20, 1500000], [25, 10000000], [30, 20000000]].map(([v, cost]) => ({ v, cost })), fmt: (v) => `${v}%` },
-    gold: { name: '골드 획득량 증가', levels: [[5, 300000], [10, 600000], [15, 1000000], [20, 1500000], [25, 10000000], [30, 20000000]].map(([v, cost]) => ({ v, cost })), fmt: (v) => `${v}%` },
+    gold: { name: '메소 획득량 증가', levels: [[5, 300000], [10, 600000], [15, 1000000], [20, 1500000], [25, 10000000], [30, 20000000]].map(([v, cost]) => ({ v, cost })), fmt: (v) => `${v}%` },
   };
   // 인벤토리 칸당 확장 비용
   const INV_COST = [[29, 10000], [49, 60000], [69, 150000], [99, 200000], [129, 300000], [169, 400000], [209, 500000], [256, 1500000]];
@@ -233,7 +233,7 @@
     { id: 'chp', name: '최대 HP', cur: 'chaos', per: 2, max: 50, base: 10, step: 5, unit: '%', icon: '💗' },
     { id: 'drop', name: '장비 드롭률', cur: 'chaos', per: 3, max: 20, base: 15, step: 5, unit: '%', icon: '🎁' },
     { id: 'cube', name: '훈련용 큐브 드롭률', cur: 'chaos', per: 10, max: 20, base: 15, step: 5, unit: '%', icon: '🧊' },
-    { id: 'gold', name: '골드 획득량', cur: 'chaos', per: 3, max: 20, base: 15, step: 5, unit: '%', icon: '💰' },
+    { id: 'gold', name: '메소 획득량', cur: 'chaos', per: 3, max: 20, base: 15, step: 5, unit: '%', icon: '💰' },
   ];
   const coinUpCost = (u, lv) => u.base + u.step * lv;
 

@@ -5,17 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>울티마 스쿼드</title>
   <meta name="description" content="용병을 성장시키고 자동 전투로 스테이지를 공략하는 방치형 미니게임 (팬메이드)">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
-  <link rel="stylesheet" href="style.css?v=19">
+  <link rel="icon" href="assets/items/war_8_weapon.png">
+  <link rel="stylesheet" href="style.css?v=21">
 </head>
 <body>
   <header class="top">
-    <div class="brand"><span class="logo">⚔️</span><h1>울티마 스쿼드</h1></div>
+    <div class="brand"><img class="logo" src="assets/items/war_8_weapon.png" alt=""><h1>울티마 스쿼드</h1></div>
     <div class="wallet">
-      <span title="골드">💰 <b id="wGold">0</b></span>
-      <span title="훈련용 큐브">🧊 <b id="wCube">0</b></span>
-      <span title="스쿼드 코인">🟡 <b id="wSquad">0</b></span>
-      <span title="카오스 스쿼드 코인">🟣 <b id="wChaos">0</b></span>
+      <span title="메소"><img class="mi" src="assets/icons/meso.png" alt=""> <b id="wGold">0</b></span>
+      <span title="훈련용 큐브"><img class="mi" src="assets/icons/cube.png" alt=""> <b id="wCube">0</b></span>
+      <span title="스쿼드 코인"><img class="mi" src="assets/icons/squad_coin.png" alt=""> <b id="wSquad">0</b></span>
+      <span title="카오스 스쿼드 코인"><img class="mi" src="assets/icons/chaos_coin.png" alt=""> <b id="wChaos">0</b></span>
     </div>
   </header>
 
@@ -27,18 +27,18 @@
       </div>
       <div class="canvas-wrap">
         <canvas id="cv" width="1000" height="400"></canvas>
-        <button id="btnBox" class="ov-btn box" title="에스페시아 상자 소환 (하루 1회)">🎁</button>
-        <button id="btnPortal" class="ov-btn portal" title="다음 스테이지로 이동" hidden>🌀<small>다음</small></button>
+        <button id="btnBox" class="ov-btn box" title="에스페시아 상자 소환 (하루 1회)"><img class="bi" src="assets/icons/box.png" alt=""></button>
+        <button id="btnPortal" class="ov-btn portal" title="다음 스테이지로 이동" hidden><img class="pi" src="assets/icons/portal.png" alt=""><small>다음</small></button>
         <div id="banner" class="banner"></div>
         <div class="pip-info" id="pipInfo"></div>
       </div>
       <div class="battle-bottom">
         <div class="gauge"><div id="gaugeFill"></div><span id="gaugeText">0 / 61</span></div>
-        <button id="btnRepeat" class="chip" title="같은 스테이지 반복">🔁 반복</button>
-        <button id="btnBag" class="chip bag" title="용병 관리">🎒 <span id="bagInfo">0/10</span><i id="bagNew" hidden></i></button>
-        <button id="btnPip" class="chip" title="전투 화면을 항상 위에 떠 있는 작은 창으로 (크롬/엣지)">📺 PIP</button>
-        <button id="btnBgm" class="chip" title="배경음악 켜기/끄기">🎵 BGM</button>
-        <label class="vol" title="전체 볼륨">🔊<input type="range" id="vol" min="0" max="100" step="5"></label>
+        <button id="btnRepeat" class="chip" title="같은 스테이지 반복">반복</button>
+        <button id="btnBag" class="chip bag" title="용병 관리"><img class="mi" src="assets/icons/bag.png" alt=""> <span id="bagInfo">0/10</span><i id="bagNew" hidden></i></button>
+        <button id="btnPip" class="chip" title="전투 화면을 항상 위에 떠 있는 작은 창으로 (크롬/엣지)">PIP</button>
+        <button id="btnBgm" class="chip" title="배경음악 켜기/끄기">BGM</button>
+        <label class="vol" title="전체 볼륨"><span class="small muted">음량</span><input type="range" id="vol" min="0" max="100" step="5"></label>
       </div>
     </section>
 
@@ -68,13 +68,13 @@
   <div id="modal" class="modal" hidden><div class="modal-box" id="modalBox"></div></div>
   <div id="toast" class="toast"></div>
 
-  <script src="js/data.js?v=19"></script>
-  <script src="js/monsters.js?v=19"></script>
-  <script src="js/engine.js?v=19"></script>
-  <script src="js/assets.js?v=19"></script>
-  <script src="js/auto.js?v=19"></script>
-  <script src="js/render.js?v=19"></script>
-  <script src="js/ui.js?v=19"></script>
-  <script src="js/main.js?v=19"></script>
+  <script src="js/data.js?v=21"></script>
+  <script src="js/monsters.js?v=21"></script>
+  <script src="js/engine.js?v=21"></script>
+  <script src="js/assets.js?v=21"></script>
+  <script src="js/auto.js?v=21"></script>
+  <script src="js/render.js?v=21"></script>
+  <script src="js/ui.js?v=21"></script>
+  <script src="js/main.js?v=21"></script>
 </body>
 </html>
