@@ -138,7 +138,7 @@
     return out;
   }
   function makeItem(st, tier, cls, slot) {
-    cls = cls || pick(D.CLASSES);
+    cls = cls || pick(ownedMercs(st).length ? ownedMercs(st) : D.CLASSES); // 영입한 용병 직업의 장비만 나온다
     slot = slot || pick(D.SLOTS);
     const q = ri(5);
     const T = D.TIERS[tier];
