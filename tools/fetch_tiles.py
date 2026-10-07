@@ -67,11 +67,23 @@ def build(mid, out, key=None):
     return ts, True
 
 
+def surface(path):
+    """보이는 발판 윗면: 가로의 60% 이상이 채워지는 첫 줄"""
+    a = Image.open(path).convert('RGBA').getchannel('A')
+    for y in range(a.height):
+        row = [a.getpixel((x, y)) for x in range(0, a.width, 4)]
+        if sum(1 for v in row if v > 128) / len(row) > 0.6:
+            return y
+    return FOOT
+
+
 if __name__ == '__main__':
     info = {}
     for r, region in enumerate(MAPS):
         for m, (mid, _, _) in enumerate(region):
             res = build(mid, os.path.join(OUT, 'maps', f'{r}_{m}_ground.png'), f'{r}_{m}')
             info[f'{r}_{m}'] = {'tileset': res and res[0], 'ok': bool(res and res[1])}
+            if res and res[1]:
+                info[f'{r}_{m}']['surface'] = surface(os.path.join(OUT, 'maps', f'{r}_{m}_ground.png'))
             print(r, m, mid, info[f'{r}_{m}'], flush=True)
     json.dump({'foot': FOOT, 'maps': info}, open(os.path.join(OUT, 'maps', 'ground.json'), 'w'), indent=1)

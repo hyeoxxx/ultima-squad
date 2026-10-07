@@ -23,6 +23,7 @@
         if (!m.effect && m.keydown) { m.effect = m.keydown; m.effectKind = 'keydown'; }
       } catch { /* 없음 */ }
     }));
+    try { G.USAssets.groundInfo = (await (await fetch('assets/maps/ground.json')).json()).maps; } catch { /* 없음 */ }
     G.USAssets.ready = true;
   }
   const charSrc = (cls, outfit, w, key, f) => `assets/chars/${cls}/o${outfit}w${w}/${key}${f}.png`;

@@ -3,51 +3,63 @@
  "maps": {
   "0_0": {
    "tileset": "grassySoil",
-   "ok": true
+   "ok": true,
+   "surface": 27
   },
   "0_1": {
    "tileset": "minar",
-   "ok": true
+   "ok": true,
+   "surface": 26
   },
   "0_2": {
    "tileset": "whiteMarble",
-   "ok": true
+   "ok": true,
+   "surface": 44
   },
   "0_3": {
    "tileset": "whiteMarble",
-   "ok": true
+   "ok": true,
+   "surface": 44
   },
   "1_0": {
    "tileset": "dryRock2",
-   "ok": true
+   "ok": true,
+   "surface": 31
   },
   "1_1": {
    "tileset": "goldBeach1",
-   "ok": true
+   "ok": true,
+   "surface": 32
   },
   "1_2": {
    "tileset": "arcana1",
-   "ok": true
+   "ok": true,
+   "surface": 13
   },
   "1_3": {
    "tileset": "arcana1",
-   "ok": true
+   "ok": true,
+   "surface": 13
   },
   "2_0": {
    "tileset": "cernium3",
-   "ok": true
+   "ok": true,
+   "surface": 26
   },
   "2_1": {
    "tileset": "dayDesert",
-   "ok": true
+   "ok": true,
+   "surface": 32
   },
   "2_2": {
    "tileset": "neoCity",
-   "ok": true
+   "ok": true,
+   "surface": 30
   },
   "2_3": {
    "tileset": "whiteMarble2",
-   "ok": true
+   "ok": true,
+   "surface": 44
   }
  }
 }
