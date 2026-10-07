@@ -220,16 +220,22 @@
   const INV_MAX = 256;
   const CUBE_PRICE = 20000;
 
-  // ───────── 코인샵 ─────────
-  const SHOP = [
-    { id: 'sol_erda', name: '솔 에르다', cur: 'squad', price: 200, limit: 10, icon: '💠' },
-    { id: 'sol_piece', name: '솔 에르다 조각 교환권', cur: 'squad', price: 15, limit: 400, icon: '🔷' },
-    { id: 'exp_ticket', name: '상급 EXP 교환권 (100개 묶음)', cur: 'chaos', price: 30, limit: 50, icon: '📗' },
-    { id: 'exp4', name: '경험치 4배 쿠폰 (30분)', cur: 'chaos', price: 30, limit: 20, icon: '🎫' },
-    { id: 'vip', name: 'VIP 부스터', cur: 'chaos', price: 20, limit: 100, icon: '🚀' },
-    { id: 'exp3', name: '경험치 3배 쿠폰 (30분)', cur: 'chaos', price: 15, limit: 200, icon: '🎟️' },
-    { id: 'circulator', name: '카오스 서큘레이터', cur: 'chaos', price: 20, limit: 40, icon: '🔄' },
+  // ───────── 코인 강화 (원작 코인샵 아이템 대신 영구 강화) ─────────
+  // 스쿼드 코인은 일반 모드 최초 클리어로만 얻어서 총 8,000개 → 전부 사면 약 7,550개
+  // 카오스 스쿼드 코인은 카오스 몬스터에게서 계속 나온다
+  const COIN_UP = [
+    { id: 'exp', name: '경험치 획득량', cur: 'squad', per: 5, max: 10, base: 50, step: 50, unit: '%', icon: '📗' },
+    { id: 'atk', name: '공격력/마력', cur: 'squad', per: 4, max: 10, base: 40, step: 40, unit: '%', icon: '⚔️' },
+    { id: 'hp', name: '최대 HP', cur: 'squad', per: 4, max: 10, base: 40, step: 40, unit: '%', icon: '❤️' },
+    { id: 'offline', name: '오프라인 보상 효율', cur: 'squad', per: 5, max: 4, base: 100, step: 0, unit: '%p', icon: '🌙' },
+    { id: 'cexp', name: '경험치 획득량', cur: 'chaos', per: 2, max: 50, base: 10, step: 5, unit: '%', icon: '📘' },
+    { id: 'catk', name: '공격력/마력', cur: 'chaos', per: 2, max: 50, base: 10, step: 5, unit: '%', icon: '🗡️' },
+    { id: 'chp', name: '최대 HP', cur: 'chaos', per: 2, max: 50, base: 10, step: 5, unit: '%', icon: '💗' },
+    { id: 'drop', name: '장비 드롭률', cur: 'chaos', per: 3, max: 20, base: 15, step: 5, unit: '%', icon: '🎁' },
+    { id: 'cube', name: '훈련용 큐브 드롭률', cur: 'chaos', per: 10, max: 20, base: 15, step: 5, unit: '%', icon: '🧊' },
+    { id: 'gold', name: '골드 획득량', cur: 'chaos', per: 3, max: 20, base: 15, step: 5, unit: '%', icon: '💰' },
   ];
+  const coinUpCost = (u, lv) => u.base + u.step * lv;
 
   // ───────── 확률 등 [추정] ─────────
   const RATES = {
@@ -249,6 +255,6 @@
     CLASSES, CLASS_NAME, SLOTS, SLOT_NAME, RECRUIT, MAX_LEVEL, BASE_SPEED, speedInterval, baseStats, BASE_CRIT, BASE_CRIT_DMG,
     SKILLS, BASIC, SKILL_LIST, ITEM_NAMES, TIERS, QUALITY_NAME, GRADE_NAME, GRADE_COLOR,
     POT_WEIGHTS, GRADE_IDX, POT_VALUES, POT_LABEL, REGION_MAPS, MAP_MONSTERS, mapIndex, REC_LEVEL,
-    dropRange, goldPerKill, clearReward, UTIL, invSlotCost, INV_MAX, CUBE_PRICE, SHOP, RATES,
+    dropRange, goldPerKill, clearReward, UTIL, invSlotCost, INV_MAX, CUBE_PRICE, COIN_UP, coinUpCost, RATES,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -77,12 +77,36 @@
       lastBattle: { mode: 'normal', stage: 0, cleared: false },
       volume: 30,
       unseenDrops: 0,
+      coinUp: {},
+      auto: defaultAuto(),
+      repeatReason: null,
     };
     for (const c of D.CLASSES) st.mercs[c] = { owned: c === 'war', lv: 1, exp: 0, equip: { weapon: null, hat: null, glove: null, shoe: null }, skills: [null, null, null] };
     return st;
   }
 
   const isCleared = (st, mode, idx) => !!st.cleared[mode][idx];
+  // 코인 강화 보너스 (%)
+  function bonus(st, key) {
+    const up = st.coinUp || {};
+    const lv = (id) => (up[id] || 0) * D.COIN_UP.find((u) => u.id === id).per;
+    switch (key) {
+      case 'exp': return lv('exp') + lv('cexp');
+      case 'atk': return lv('atk') + lv('catk');
+      case 'hp': return lv('hp') + lv('chp');
+      default: return lv(key);
+    }
+  }
+  const expMult = (st) => 1 + bonus(st, 'exp') / 100;
+  const goldMult = (st) => 1 + (st.util.gold + bonus(st, 'gold')) / 100;
+  function defaultAuto() {
+    return {
+      equip: true, sort: true, sortAt: 80, synth: true, disMax: 2, retry: true, retryMin: 10, box: true,
+      skills: true, cube: false, cubeWeapon: 'pct', cubeArmor: 'def', cubeLines: 2, cubeKeep: 10,
+      util: true, utilOrder: ['slots', 'gold', 'drop', 'inv', 'offline'], invTarget: 60, recruit: true,
+      notifyFull: true, notifyBoss: true, notifyFirst: true, notifyCube: true,
+    };
+  }
   const chaosUnlocked = (st) => isCleared(st, 'normal', 29);
   const ownedMercs = (st) => D.CLASSES.filter((c) => st.mercs[c].owned);
 
@@ -169,8 +193,8 @@
     const skills = m.skills.filter(Boolean);
     if (skills.includes('iron_body')) { s.hp *= 1.1; s.def *= 1.1; }
     s.speed = Math.min(8, s.speed);
-    s.atkTotal = (s.atk + s.atkFlat) * (1 + s.atkPct / 100);
-    s.hp = Math.round(s.hp);
+    s.atkTotal = (s.atk + s.atkFlat) * (1 + s.atkPct / 100) * (1 + bonus(st, 'atk') / 100);
+    s.hp = Math.round(s.hp * (1 + bonus(st, 'hp') / 100));
     s.def = Math.round(s.def);
     s.interval = D.speedInterval(s.speed);
     return s;
@@ -417,21 +441,21 @@
     const isRegionBoss = mon.kind === 'regionBoss';
     if (mon.kind === 'box') return onBoxKill(st, b, mon);
     // EXP / 골드
-    const exp = expPerKill(b.mode, b.idx) * (isStageBoss ? R.stageBossExp : isRegionBoss ? 30 : 1);
+    const exp = expPerKill(b.mode, b.idx) * (isStageBoss ? R.stageBossExp : isRegionBoss ? 30 : 1) * expMult(st);
     for (const c of Object.keys(b.mercs)) gainExp(st, c, exp, b.events);
     const g = D.goldPerKill(b.mode, b.idx) * (isStageBoss ? R.stageBossGold : 1);
-    if (g) { const gg = Math.round(g * (1 + st.util.gold / 100)); st.gold += gg; b.goldGained = (b.goldGained || 0) + gg; }
+    if (g) { const gg = Math.round(g * goldMult(st)); st.gold += gg; b.goldGained = (b.goldGained || 0) + gg; }
     // 드롭 (온라인 전용)
     if (online) {
       const range = D.dropRange(b.mode, b.idx);
       if (range) {
-        const chance = isRegionBoss ? 1 : isStageBoss ? R.stageBossEquip : R.equipDrop * (1 + st.util.drop / 100);
+        const chance = isRegionBoss ? 1 : isStageBoss ? R.stageBossEquip : R.equipDrop * (1 + (st.util.drop + bonus(st, 'drop')) / 100);
         if (rand() < chance) {
           const it = makeItem(st, rollDropTier(range));
           if (addItem(st, it)) b.events.push({ t: 'drop', item: it });
         }
       }
-      if (rand() < (b.mode === 'chaos' ? R.cubeChaos : R.cubeNormal)) { st.cubes++; b.events.push({ t: 'cube' }); }
+      if (rand() < (b.mode === 'chaos' ? R.cubeChaos : R.cubeNormal) * (1 + bonus(st, 'cube') / 100)) { st.cubes++; b.events.push({ t: 'cube' }); }
       if (b.mode === 'chaos' && rand() < R.smallChaosCoin) { st.smallChaosCoin++; b.events.push({ t: 'coin' }); }
     }
     if (isStageBoss || isRegionBoss) st.stats.bossKills++;
@@ -466,14 +490,14 @@
     b.box = null;
     st.stats.boxes++;
     const g = box.grade, gm = BOX_MULT[g];
-    const exp = Math.round(expPerKill(b.mode, b.idx) * 2700 * gm);
+    const exp = Math.round(expPerKill(b.mode, b.idx) * 2700 * gm * expMult(st));
     for (const c of Object.keys(b.mercs)) gainExp(st, c, exp, b.events);
     const range = D.dropRange(b.mode, b.idx) || [1, 1];
     let items = 0;
     for (let i = 0; i < BOX_ITEMS[g]; i++) { const it = makeItem(st, rollDropTier(range)); if (addItem(st, it)) { items++; b.events.push({ t: 'drop', item: it }); } }
     let gold = 0, cubes = 0;
     if (b.mode !== 'chaos') {
-      gold = Math.round(D.goldPerKill(b.mode, b.idx) * 200 * gm * (1 + st.util.gold / 100));
+      gold = Math.round(D.goldPerKill(b.mode, b.idx) * 200 * gm * goldMult(st));
       cubes = BOX_CUBES[g];
       st.gold += gold; st.cubes += cubes;
     }
@@ -600,11 +624,11 @@
       st.lastBattle = { mode: b.mode, stage: b.idx, cleared: true };
       // 다음 스테이지
       if (b.info.isBoss) {
-        if (b.idx === 29) { st.stage = 28; st.repeat = true; }
+        if (b.idx === 29) { st.stage = 28; st.repeat = true; st.repeatReason = null; }
         else { st.stage = b.idx + 1; }
       } else if (!st.repeat) {
         const next = b.idx + 1;
-        if (next % 10 === 9 && invFull(st)) { st.repeat = true; b.events.push({ t: 'log', msg: '인벤토리가 가득 차서 보스 스테이지에 입장할 수 없어요.' }); }
+        if (next % 10 === 9 && invFull(st)) { st.repeat = true; st.repeatReason = 'inv'; b.events.push({ t: 'log', msg: '인벤토리가 가득 차서 보스 스테이지에 입장할 수 없어요.' }); }
         else st.stage = next;
       }
     } else {
@@ -615,6 +639,8 @@
       if (back === b.idx && !isCleared(st, b.mode, back)) back = b.idx;
       st.stage = back;
       st.repeat = true;
+      st.repeatReason = 'fail';
+      st.retryAt = now;
       b.events.push({ t: 'log', msg: `스테이지 ${b.info.label} 클리어 실패. ${stageInfo(b.mode, back).label} 스테이지를 반복합니다.` });
     }
   }
@@ -654,12 +680,12 @@
     const base = offlineBase(st);
     const res = { away, secs, gold: 0, exp: 0, ups: {}, base };
     if (secs < 60 || !base) return res;
-    const kills = estimateKillRate(st, base.mode, base.idx) * secs * R.offlineRatio;
+    const kills = estimateKillRate(st, base.mode, base.idx) * secs * (R.offlineRatio + bonus(st, 'offline') / 100);
     const before = {};
     for (const c of ownedMercs(st)) before[c] = { lv: st.mercs[c].lv, exp: st.mercs[c].exp };
-    const exp = Math.round(kills * expPerKill(base.mode, base.idx));
+    const exp = Math.round(kills * expPerKill(base.mode, base.idx) * expMult(st));
     for (const c of ownedMercs(st)) gainExp(st, c, exp, null);
-    const gold = Math.round(kills * D.goldPerKill(base.mode, base.idx) * (1 + st.util.gold / 100));
+    const gold = Math.round(kills * D.goldPerKill(base.mode, base.idx) * goldMult(st));
     st.gold += gold;
     res.gold = gold; res.exp = exp; res.kills = Math.round(kills);
     for (const c of ownedMercs(st)) res.ups[c] = { from: before[c].lv, to: st.mercs[c].lv, fromPct: before[c].exp / expNeed(before[c].lv), toPct: st.mercs[c].lv >= D.MAX_LEVEL ? 1 : st.mercs[c].exp / expNeed(st.mercs[c].lv) };
@@ -803,14 +829,16 @@
     st.smallChaosCoin -= n; st.chaosCoin += n;
     return n;
   }
-  function buyShop(st, id) {
-    const it = D.SHOP.find((x) => x.id === id);
-    const bought = st.shop[id] || 0;
-    if (bought >= it.limit) return { ok: false, why: '구매 가능 수량을 모두 샀어요' };
-    const key = it.cur === 'squad' ? 'squadCoin' : 'chaosCoin';
-    if (st[key] < it.price) return { ok: false, why: '코인이 부족해요' };
-    st[key] -= it.price;
-    st.shop[id] = bought + 1;
+  function buyCoinUp(st, id) {
+    const u = D.COIN_UP.find((x) => x.id === id);
+    st.coinUp = st.coinUp || {};
+    const lv = st.coinUp[id] || 0;
+    if (lv >= u.max) return { ok: false, why: '최대 단계예요' };
+    const cost = D.coinUpCost(u, lv);
+    const key = u.cur === 'squad' ? 'squadCoin' : 'chaosCoin';
+    if (st[key] < cost) return { ok: false, why: '코인이 부족해요' };
+    st[key] -= cost;
+    st.coinUp[id] = lv + 1;
     return { ok: true };
   }
 
@@ -826,7 +854,7 @@
     mercStats, skillCd, expNeed, expPerKill, monsterStats, stageInfo, isCleared, chaosUnlocked, ownedMercs,
     makeItem, itemName, invFull, addItem, availableSkills, canEquip, gainExp, frontier, canEnter,
     applyOffline, offlineBase, boxStatus, summonBox, equipItem, unequipItem, setSkill, recruit, buyUtil, utilNext,
-    expandInv, buyCubes, cubeRoll, cubeApply, findItem, synthesize, autoSynthGroup, dismantle, convertChaosCoins, buyShop,
+    expandInv, buyCubes, cubeRoll, cubeApply, findItem, synthesize, autoSynthGroup, dismantle, convertChaosCoins, buyCoinUp, bonus, defaultAuto,
     skillSlots, fmt, today,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

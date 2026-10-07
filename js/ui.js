@@ -27,9 +27,10 @@
   const gradeOf = (it) => D.TIERS[it.tier].grade;
   function itemCell(it, extra = '') {
     const g = gradeOf(it);
+    if (ctx && G.USAuto && ctx.st.inventory.includes(it) && G.USAuto.isUpgrade(ctx.st, it)) extra += ' up';
     return `<div class="item ${g ? 'g-' + g : ''} ${extra}" data-item="${it.id}" title="${esc(US.itemName(it))}">
       <span class="tier">${it.tier}</span>${icon(it)}<span class="cls">${CLS_ICON[it.cls]}</span>
-      ${it.isNew ? '<span class="new"></span>' : ''}${it.lock ? '<span class="lock">🔒</span>' : ''}</div>`;
+      ${it.isNew ? '<span class="new"></span>' : ''}${it.lock ? '<span class="lock">🔒</span>' : ''}${extra.includes(' up') ? '<span class="upm">▲</span>' : ''}</div>`;
   }
   function potLines(it) {
     if (!it.pot.length) return '<div class="muted small">잠재능력 없음</div>';
@@ -49,6 +50,10 @@
         cmp = `<div class="small muted">착용 중: ${esc(US.itemName(cur))} (${cur.tier}단계)</div>` +
           (it.slot === 'weapon' ? `<div class="small">공/마 ${d(it.atk, cur.atk)}</div>` : `<div class="small">HP ${d(it.hp, cur.hp)} · 방어력 ${d(it.def, cur.def)}</div>`);
       } else if (!cur) cmp = '<div class="small muted">착용 중인 장비 없음</div>';
+    }
+    if (opts.compare && G.USAuto.canWear(st, it) && st.inventory.includes(it)) {
+      const ratio = G.USAuto.upgradeRatio(st, it);
+      if (ratio) cmp += `<div class="small" style="margin-top:4px">장착 시 전투력 <span class="diff ${ratio > 1.0001 ? 'up' : ratio < 0.9999 ? 'down' : ''}">${ratio >= 1 ? '+' : ''}${((ratio - 1) * 100).toFixed(1)}%</span></div>`;
     }
     return `<div class="row">${icon(it)}<div class="name">${esc(US.itemName(it))}</div></div>
       <div class="small muted">${D.CLASS_NAME[it.cls]} ${D.SLOT_NAME[it.slot]} · ${it.tier}단계 · ${D.QUALITY_NAME[it.q]} · Lv.${T.req} 이상</div>
@@ -219,17 +224,71 @@
 
   panels.shop = function () {
     const st = ctx.st;
+    const row = (u) => {
+      const lv = (st.coinUp || {})[u.id] || 0;
+      const max = lv >= u.max;
+      const cost = D.coinUpCost(u, lv);
+      const have = u.cur === 'squad' ? st.squadCoin : st.chaosCoin;
+      return `<tr><td>${u.icon} <b>${u.name}</b></td><td>+${lv * u.per}${u.unit} <span class="small muted">(${lv}/${u.max})</span></td>
+        <td>${max ? '<span class="muted">최대</span>' : `+${(lv + 1) * u.per}${u.unit}`}</td>
+        <td>${max ? '' : `<button class="btn sm ${have >= cost ? 'primary' : ''}" data-act="coinup" data-id="${u.id}" ${have >= cost ? '' : 'disabled'}>${u.cur === 'squad' ? '🟡' : '🟣'} ${fmt(cost)}</button>`}</td></tr>`;
+    };
+    const ups = D.COIN_UP;
     return `<div class="row" style="margin-bottom:10px"><span>🟡 스쿼드 코인 <b>${fmt(st.squadCoin)}</b></span><span>🟣 카오스 스쿼드 코인 <b>${fmt(st.chaosCoin)}</b></span></div>
-      <table class="t"><tr><th>아이템</th><th>가격</th><th>구매</th><th></th></tr>${D.SHOP.map((it) => {
-        const bought = st.shop[it.id] || 0;
-        const have = it.cur === 'squad' ? st.squadCoin : st.chaosCoin;
-        const ok = bought < it.limit && have >= it.price;
-        return `<tr><td>${it.icon} ${esc(it.name)}</td><td>${it.cur === 'squad' ? '🟡' : '🟣'} ${it.price}</td><td>${bought} / ${it.limit}</td><td><button class="btn sm" data-act="shop" data-id="${it.id}" ${ok ? '' : 'disabled'}>구매</button></td></tr>`;
-      }).join('')}</table>
+      <h3>🟡 스쿼드 코인 강화 <span class="small muted">일반 모드 최초 클리어 보상 (총 8,000개)</span></h3>
+      <table class="t"><tr><th>강화</th><th>현재</th><th>다음</th><th>가격</th></tr>${ups.filter((u) => u.cur === 'squad').map(row).join('')}</table>
+      <h3 style="margin-top:16px">🟣 카오스 스쿼드 코인 강화 <span class="small muted">카오스 몬스터 처치 시 작은 코인 → 맵 탭에서 이전</span></h3>
+      <table class="t"><tr><th>강화</th><th>현재</th><th>다음</th><th>가격</th></tr>${ups.filter((u) => u.cur === 'chaos').map(row).join('')}</table>
+      <p class="small muted">현재 보너스: 경험치 +${US.bonus(st, 'exp')}% · 공격력/마력 +${US.bonus(st, 'atk')}% · HP +${US.bonus(st, 'hp')}% · 장비 드롭 +${US.bonus(st, 'drop')}% · 큐브 드롭 +${US.bonus(st, 'cube')}% · 골드 +${US.bonus(st, 'gold')}% · 오프라인 효율 +${US.bonus(st, 'offline')}%p</p>
       <hr><h3>훈장</h3>
       <div class="row"><span>${st.medals.normal ? '🎖️' : '⬜'} 울티마 스쿼드 훈장 <span class="small muted">(일반 3-10 클리어)</span></span>
-      <span>${st.medals.chaos ? '🏅' : '⬜'} 울티마 베스트 스쿼드 훈장 <span class="small muted">(카오스 3-10 클리어)</span></span></div>
-      <p class="small muted">팬메이드 게임이라 구매한 아이템은 기록으로만 남아요.</p>`;
+      <span>${st.medals.chaos ? '🏅' : '⬜'} 울티마 베스트 스쿼드 훈장 <span class="small muted">(카오스 3-10 클리어)</span></span></div>`;
+  };
+
+  panels.auto = function () {
+    const st = ctx.st, A = st.auto, AU = G.USAuto;
+    const chk = (k, label, desc) => `<label class="chk"><input type="checkbox" data-auto="${k}" ${A[k] ? 'checked' : ''}> <b>${label}</b>${desc ? ` <span class="small muted">${desc}</span>` : ''}</label>`;
+    const sel = (k, opts) => `<select data-autov="${k}">${Object.entries(opts).map(([v, n]) => `<option value="${v}" ${String(A[k]) === v ? 'selected' : ''}>${n}</option>`).join('')}</select>`;
+    const num = (k, min, max, step = 1) => `<input type="number" class="btn sm num" data-autov="${k}" value="${A[k]}" min="${min}" max="${max}" step="${step}">`;
+    const r = ctx.sessionReport();
+    const ph = (v) => fmt(v / r.hours);
+    const UTIL_NAME = { slots: '스킬 슬롯', gold: '골드 획득량', drop: '장비 드롭률', inv: '인벤토리', offline: '오프라인 시간' };
+    return `<div class="auto-grid"><div>
+      <h3>장비</h3>
+      ${chk('equip', '좋은 장비 자동 장착', '더 강해지는 장비가 들어오면 바로 교체')}
+      ${chk('sort', '인벤토리 자동 정리', '')}
+      <div class="sub">인벤토리가 ${num('sortAt', 30, 100, 5)}% 이상 차면 →
+        <label class="chk inline"><input type="checkbox" data-auto="synth" ${A.synth ? 'checked' : ''}> 9개 모인 단계 합성</label>
+        → 그래도 차 있으면 ${sel('disMax', { 0: '분해 안 함', 1: '1단계 이하 분해', 2: '2단계 이하 분해', 3: '3단계 이하 분해', 4: '4단계 이하 분해', 5: '5단계 이하 분해', 6: '6단계 이하 분해' })}
+        <div class="small muted">잠근 장비, 착용 중인 장비, 지금보다 좋은 장비, 나중에 낄 장비는 건드리지 않아요.</div></div>
+      ${chk('cube', '자동 큐브', '착용 장비 잠재를 목표가 나올 때까지')}
+      <div class="sub">무기 ${sel('cubeWeapon', AU.CUBE_WEAPON)} · 방어구 ${sel('cubeArmor', AU.CUBE_ARMOR)} 옵션 ${sel('cubeLines', { 1: '1줄 이상', 2: '2줄 이상', 3: '3줄' })} · 큐브 ${num('cubeKeep', 0, 9999)}개는 남겨두기</div>
+      <h3>진행</h3>
+      ${chk('retry', '자동 재도전', '일반 모드를 다 깨면 카오스로도 넘어가요')}
+      <div class="sub">실패해서 아래 스테이지를 반복 중이면 ${num('retryMin', 1, 120)}분마다 다음 스테이지 재도전</div>
+      ${chk('box', '에스페시아 상자 자동 소환', '하루 1회, 가능한 첫 타이밍에')}
+      ${chk('skills', '스킬 자동 배치', '레벨업·보스 스테이지에 맞춰 추천 조합으로 (수동 배치를 덮어써요)')}
+      ${chk('recruit', '용병 자동 영입', '조건과 골드가 되면 바로')}
+      ${chk('util', '유틸리티 자동 구매', '')}
+      <div class="sub">순서: ${A.utilOrder.map((k, i) => `<span class="ord">${i + 1}. ${UTIL_NAME[k]} <button class="btn sm" data-act="ordUp" data-i="${i}" ${i ? '' : 'disabled'}>▲</button></span>`).join(' ')}
+        <div>인벤토리는 ${num('invTarget', 10, 256)}칸까지 · 영입할 골드는 남겨둬요</div></div>
+      <h3>알림</h3>
+      ${chk('notifyFull', '인벤토리 가득 참')} ${chk('notifyBoss', '보스 스테이지 도달')} ${chk('notifyFirst', '최초 클리어')} ${chk('notifyCube', '큐브 목표 달성')}
+      <button class="btn sm" data-act="askNotify">윈도우 알림 허용하기</button>
+    </div>
+    <div class="detail">
+      <h3>📊 이번 접속 리포트</h3>
+      <div class="small muted">${new Date(r.at).toLocaleTimeString('ko-KR', { hour12: false })}부터 · ${Math.floor(r.hours)}시간 ${Math.round((r.hours % 1) * 60)}분</div>
+      <table class="t">
+        <tr><td>몬스터 처치</td><td><b>${fmt(r.kills)}</b> <span class="small muted">(시간당 ${ph(r.kills)})</span></td></tr>
+        <tr><td>획득 골드</td><td><b>${fmt(r.gold)}</b> <span class="small muted">(시간당 ${ph(r.gold)})</span></td></tr>
+        <tr><td>획득 장비</td><td><b>${r.items}</b>개</td></tr>
+        <tr><td>에스페시아 상자</td><td>${r.boxes}회</td></tr>
+        ${r.mercs.map((m) => `<tr><td>${D.CLASS_NAME[m.cls]}</td><td>Lv.${m.fromLv} → <b>Lv.${m.toLv}</b> <span class="small muted">EXP +${fmt(m.exp)} (시간당 ${ph(m.exp)})</span></td></tr>`).join('')}
+        <tr><td>최초 클리어</td><td>${r.clears.length ? r.clears.join(', ') : '-'}</td></tr>
+      </table>
+      <button class="btn sm" data-act="resetSession">리포트 초기화</button>
+    </div></div>`;
   };
 
   panels.etc = function () {
@@ -266,6 +325,13 @@
   });
 
   $('panel').addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.dataset.auto) { ctx.st.auto[t.dataset.auto] = t.checked; ctx.save(); if (t.dataset.auto.startsWith('notify') && t.checked) ctx.askNotify(); return render(); }
+    if (t.dataset.autov) {
+      const k = t.dataset.autov, v = t.value;
+      ctx.st.auto[k] = ['cubeWeapon', 'cubeArmor'].includes(k) ? v : Math.max(+t.min || 0, Math.min(+t.max || 1e9, +v || 0));
+      ctx.save(); return render();
+    }
     if (e.target.id === 'invSort') { ui.invSort = e.target.value; render(); }
     if (e.target.id === 'disTier') { ui.disTier = +e.target.value; render(); }
   });
@@ -359,10 +425,13 @@
         const r = US.dismantle(st, list); toast(`${r.n}개 분해 +${fmt(r.gold)} 골드`); ctx.save(); break;
       }
       case 'mapMode': ui.mapMode = t.dataset.mode; break;
-      case 'repeat': st.repeat = !st.repeat; ctx.save(); ctx.onRepeat(); break;
+      case 'repeat': st.repeat = !st.repeat; st.repeatReason = null; ctx.save(); ctx.onRepeat(); break;
       case 'convert': { const n = US.convertChaosCoins(st, +$('ccN').value || 0); toast(`카오스 스쿼드 코인 ${n}개 이전`); ctx.save(); break; }
       case 'util': res(US.buyUtil(st, t.dataset.k), '강화 완료!'); break;
-      case 'shop': res(US.buyShop(st, t.dataset.id), '구매 완료!'); break;
+      case 'coinup': if (res(US.buyCoinUp(st, t.dataset.id), '강화 완료!')) { b && US.refreshMercStats(st, b); } break;
+      case 'ordUp': { const i = +t.dataset.i, o = st.auto.utilOrder; [o[i - 1], o[i]] = [o[i], o[i - 1]]; ctx.save(); break; }
+      case 'askNotify': ctx.askNotify(); toast('브라우저에서 알림을 허용해 주세요'); break;
+      case 'resetSession': ctx.resetSession(); break;
       case 'export': modal(`<h3>세이브 내보내기</h3><textarea style="width:100%;height:140px" readonly>${esc(btoa(unescape(encodeURIComponent(JSON.stringify(st)))))}</textarea><div class="row"><button class="btn" data-close>닫기</button></div>`); return;
       case 'import': modal(`<h3>세이브 불러오기</h3><textarea id="impText" style="width:100%;height:140px" placeholder="내보내기 코드를 붙여넣으세요"></textarea><div class="row"><button class="btn primary" id="impGo">불러오기</button><button class="btn" data-close>취소</button></div>`);
         $('impGo').onclick = () => { try { const s = JSON.parse(decodeURIComponent(escape(atob($('impText').value.trim())))); if (!s.mercs) throw 0; ctx.replaceState(s); closeModal(); toast('불러왔어요'); } catch { toast('코드가 올바르지 않아요'); } };

@@ -24,6 +24,8 @@
   function migrate(s) {
     const base = US.newState(Date.now());
     for (const k of Object.keys(base)) if (s[k] === undefined) s[k] = base[k];
+    s.auto = Object.assign(US.defaultAuto(), s.auto || {});
+    s.coinUp = s.coinUp || {};
     return s;
   }
   function save() {
@@ -60,6 +62,7 @@
   // ───────── 전투 ─────────
   function startBattle() {
     battle = US.createBattle(st, Date.now());
+    if (battle.info.isBoss && !US.isCleared(st, st.mode, st.stage)) notify('boss', `${st.mode === 'chaos' ? '카오스 ' : ''}${battle.info.label} 보스 스테이지 도전! (${battle.info.mons.boss[0]})`);
     RD.clearFx();
     updateStageHud();
   }
@@ -95,7 +98,11 @@
         ticker(`${e.mode === 'chaos' ? '카오스 ' : ''}${e.label} 최초 클리어!${r.coin ? ` 스쿼드 코인 +${r.coin}` : ''}${r.medal ? ' 훈장 교환권 획득!' : ''}`);
         if (r.medal) UI.toast(r.medal === 'normal' ? '🎖️ 울티마 스쿼드 훈장 획득! 카오스 모드가 열렸어요' : '🏅 울티마 베스트 스쿼드 훈장 획득!');
         dirty = true;
-      } else if (e.t === 'box') dirty = true;
+      } else if (e.t === 'box') { dirty = true; session.boxes++; session.gold += e.gold || 0; }
+      else if (e.t === 'auto') { if (!e.quiet) ticker('⚙ ' + e.msg); if (e.notify) notify(e.notify, e.msg); dirty = true; }
+      if (e.t === 'drop') session.items++;
+      else if (e.t === 'kill' && e.kind !== 'box') session.kills++;
+      else if (e.t === 'firstclear') { session.clears.push(`${e.mode === 'chaos' ? '카오스 ' : ''}${e.label}`); notify('first', `${e.mode === 'chaos' ? '카오스 ' : ''}${e.label} 최초 클리어!`); }
     }
     if (visual) { RD.pushEvents(events, battle); sounds(events); }
     if (dirty) UI.markDirty();
@@ -108,6 +115,8 @@
       if (battle.done) {
         if (!nextBattleAt) {
           US.finishBattle(st, battle, Date.now());
+          session.gold += battle.goldGained || 0;
+          battle.events.push(...G.USAuto.between(st, Date.now()));
           if (visual) banner(battle.done === 'clear' ? 'STAGE CLEAR' : 'FAILED', battle.done === 'clear' ? 'clear' : 'fail');
           nextBattleAt = battle.time + (visual ? 1.5 : 0);
           UI.markDirty();
@@ -139,6 +148,50 @@
     const run = Math.floor(acc / US.DT) * US.DT;
     if (run > 0) { acc -= run; simulate(run, (!document.hidden || !!pipWin) && run < 1); }
   }
+
+  // ───────── 알림 ─────────
+  const NOTIFY_KEY = { full: 'notifyFull', boss: 'notifyBoss', first: 'notifyFirst', cube: 'notifyCube' };
+  function notify(kind, msg) {
+    if (!st.auto[NOTIFY_KEY[kind]]) return;
+    UI.toast(msg);
+    beep(880, 0.15, 'triangle'); setTimeout(() => beep(1175, 0.2, 'triangle'), 150);
+    if ('Notification' in window && Notification.permission === 'granted' && (document.hidden || pipWin)) {
+      try { new Notification('울티마 스쿼드', { body: msg, tag: 'us-' + kind, silent: true }); } catch { /* 미지원 */ }
+    }
+  }
+  let wasFull = false;
+  function watchInventory() {
+    const full = US.invFull(st);
+    if (full && !wasFull) notify('full', '인벤토리가 가득 찼어요! 장비를 더 얻을 수 없어요');
+    wasFull = full;
+  }
+
+  // ───────── 이번 접속 리포트 ─────────
+  const totalExp = (lv, exp) => { let t = exp; for (let l = 1; l < lv; l++) t += US.expNeed(l); return t; };
+  function newSession() {
+    const start = {};
+    for (const c of D.CLASSES) start[c] = { owned: st.mercs[c].owned, lv: st.mercs[c].lv, exp: totalExp(st.mercs[c].lv, st.mercs[c].exp) };
+    return { at: Date.now(), start, gold: 0, items: 0, kills: 0, boxes: 0, clears: [] };
+  }
+  let session = newSession();
+  function sessionReport() {
+    const hours = Math.max(1 / 60, (Date.now() - session.at) / 3600000);
+    const mercs = D.CLASSES.filter((c) => st.mercs[c].owned).map((c) => {
+      const s0 = session.start[c];
+      const gained = totalExp(st.mercs[c].lv, st.mercs[c].exp) - (s0.owned ? s0.exp : 0);
+      return { cls: c, fromLv: s0.owned ? s0.lv : 1, toLv: st.mercs[c].lv, exp: gained };
+    });
+    return { ...session, hours, mercs };
+  }
+
+  // 전투 중 주기적 자동 처리 (장착/정리/상자)
+  setInterval(() => {
+    if (!battle || battle.done) return;
+    const ev = G.USAuto.during(st);
+    if (ev.length) { US.refreshMercStats(st, battle); handleEvents(ev, false); }
+    if (st.auto.box && US.boxStatus(st, battle, Date.now()).ok) { US.summonBox(st, battle, Date.now()); ticker('⚙ 에스페시아 상자 자동 소환'); }
+    watchInventory();
+  }, 3000);
 
   // ───────── HUD ─────────
   function hud() {
@@ -232,8 +285,8 @@
     const r = US.summonBox(st, battle, Date.now());
     if (!r.ok) UI.toast(r.why); else save();
   });
-  $('btnPortal').addEventListener('click', () => { st.stage++; st.repeat = false; save(); startBattle(); UI.markDirty(); });
-  $('btnRepeat').addEventListener('click', () => { st.repeat = !st.repeat; save(); UI.markDirty(); });
+  $('btnPortal').addEventListener('click', () => { st.stage++; st.repeat = false; st.repeatReason = null; save(); startBattle(); UI.markDirty(); });
+  $('btnRepeat').addEventListener('click', () => { st.repeat = !st.repeat; st.repeatReason = null; save(); UI.markDirty(); });
   $('btnBag').addEventListener('click', () => { UI.ui.tab = 'inv'; UI.render(); $('manage').scrollIntoView({ behavior: 'smooth' }); });
   $('vol').value = st.volume;
   $('vol').addEventListener('input', (e) => { st.volume = +e.target.value; save(); });
@@ -243,12 +296,15 @@
   UI.init({
     get st() { return st; },
     getBattle: () => battle,
+    sessionReport,
+    resetSession() { session = newSession(); },
+    askNotify() { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); },
     save,
     onStageChange() { save(); startBattle(); },
     onRoster() { if (battle) US.refreshMercStats(st, battle); },
     onRepeat() { },
     replaceState(s) { st = migrate(s); save(); startBattle(); UI.render(); },
-    reset() { try { localStorage.removeItem(KEY); } catch { } st = US.newState(Date.now()); save(); startBattle(); UI.render(); },
+    reset() { try { localStorage.removeItem(KEY); } catch { } st = US.newState(Date.now()); session = newSession(); save(); startBattle(); UI.render(); },
   });
   startBattle();
   save();
