@@ -118,10 +118,17 @@
   const VIEW_SORT = [['new', '최근 획득'], ['tier', '단계'], ['cp', '전투력']];
   function viewBar(list) {
     const v = ui.view;
-    const count = (k, val) => list.filter((it) => val === 'all' || it[k] === val).length;
-    const group = (key, opts, field) => `<div class="seg">${opts.map(([val, name]) =>
-      `<button class="${v[key] === val ? 'on' : ''}" data-view="${key}:${val}">${name}${field ? ` <small>${count(field, val)}</small>` : ''}</button>`).join('')}</div>`;
-    return `<div class="viewbar">${group('cls', VIEW_CLS, 'cls')}${group('slot', VIEW_SLOT, 'slot')}<span class="muted small">정렬</span>${group('sort', VIEW_SORT)}</div>`;
+    const n = (val) => list.filter((it) => val === 'all' || it.cls === val).length;
+    const sel = (key, opts) => `<select data-viewsel="${key}">${opts.map(([val, name]) => `<option value="${val}" ${v[key] === val ? 'selected' : ''}>${name}</option>`).join('')}</select>`;
+    return `<nav class="subtabs">${VIEW_CLS.map(([val, name]) => `<button class="${v.cls === val ? 'on' : ''}" data-view="cls:${val}">${name} <small>${n(val)}</small></button>`).join('')}
+      <span class="sub-right">${sel('slot', VIEW_SLOT.map(([k, nm]) => [k, k === 'all' ? '부위: 전체' : nm]))}${sel('sort', VIEW_SORT.map(([k, nm]) => [k, '정렬: ' + nm]))}</span></nav>`;
+  }
+  // 탭별로 하위 탭에 셀 장비 목록
+  function viewSource(tab) {
+    const st = ctx.st;
+    if (tab === 'pot') return [...st.inventory, ...D.CLASSES.flatMap((c) => D.SLOTS.map((sl) => st.mercs[c].equip[sl]).filter(Boolean))].filter((it) => it.tier >= 2);
+    if (tab === 'dis') return st.inventory.filter((x) => !x.lock);
+    return st.inventory;
   }
   function view(list) {
     const v = ui.view;
@@ -141,7 +148,6 @@
     return `<div class="inv-layout"><div>
       <div class="row" style="margin-bottom:8px"><b>인벤토리 ${st.inventory.length} / ${st.invSize}</b>
         <button class="btn sm" data-act="seenAll">새 표시 지우기</button></div>
-      ${viewBar(st.inventory)}
       <div class="grid">${sortedInv().map((it) => itemCell(it, ui.sel === it.id ? 'sel' : '')).join('') || '<p class="muted">장비가 없어요. 몬스터를 처치하면 일정 확률로 장비를 얻어요 (접속 중에만).</p>'}</div>
       <hr><div class="row"><b>인벤토리 확장</b>
         ${nextCost ? `<span class="small muted">다음 칸 ${fmt(nextCost)} 골드</span><button class="btn sm" data-act="expand" data-n="1">+1칸</button><button class="btn sm" data-act="expand" data-n="10">+10칸</button>` : '<span class="muted">최대</span>'}</div>
@@ -170,7 +176,6 @@
     return `<div class="inv-layout"><div>
       <div class="row" style="margin-bottom:8px"><b>훈련용 큐브 ${st.cubes}개</b><button class="btn sm" data-act="buyCube" data-n="1">1개 구매 (2만G)</button><button class="btn sm" data-act="buyCube" data-n="10">10개 구매 (20만G)</button></div>
       <p class="small muted">재설정해도 등급은 오르지 않고, 결과 중 전/후를 골라 적용할 수 있어요. 같은 잠재가 다시 나올 수도 있어요.</p>
-      ${viewBar(all)}
       <div class="grid">${items.map((x) => itemCell(x, ui.potItem === x.id ? 'sel' : '')).join('') || '<p class="muted">2단계 이상 장비가 없어요.</p>'}</div>
     </div><div class="detail">${right}</div></div>`;
   };
@@ -185,7 +190,6 @@
       <span>선택 <b>${selItems.length}</b> / 9 ${tier ? `(${tier}단계)` : ''}</span>
       <button class="btn primary" data-act="synth" ${selItems.length === 9 ? '' : 'disabled'}>합성</button>
       <button class="btn" data-act="synthAll">가능한 만큼 전부 합성</button></div>
-      ${viewBar(st.inventory)}
       <div class="grid">${sortedInv().map((it) => itemCell(it, (ui.synth.has(it.id) ? 'sel ' : '') + ((tier && it.tier !== tier) || it.lock ? 'dim' : ''))).join('') || '<p class="muted">장비가 없어요.</p>'}</div>`;
   };
 
@@ -197,8 +201,7 @@
       <div class="row" style="margin-bottom:10px">대상 <select id="disTier"><option value="0">전체</option>${[1, 2, 3, 4, 5, 6, 7].map((t) => `<option value="${t}" ${ui.disTier === t ? 'selected' : ''}>${t}단계 이하</option>`).join('')}</select>
         <span>${list.length}개 → 💰 <b>${fmt(gold)}</b></span><button class="btn danger" data-act="disAll" ${list.length ? '' : 'disabled'}>분해</button></div>
       <table class="t"><tr><th>단계</th>${[1, 2, 3, 4, 5, 6, 7, 8].map((t) => `<th>${t}</th>`).join('')}</tr><tr><td class="muted">분해 골드</td>${[1, 2, 3, 4, 5, 6, 7, 8].map((t) => `<td>${fmt(D.TIERS[t].dis)}</td>`).join('')}</tr></table>
-      <div style="margin-top:10px">${viewBar(st.inventory.filter((x) => !x.lock))}</div>
-      <div class="grid">${list.map((it) => itemCell(it)).join('')}</div>
+      <div class="grid" style="margin-top:10px">${list.map((it) => itemCell(it)).join('')}</div>
       <p class="small muted">위에서 고른 직업·부위의 장비만 분해 대상이에요.</p>`;
   };
 
@@ -334,7 +337,8 @@
     if (!ctx) return;
     ui.dirty = false;
     document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === ui.tab));
-    $('panel').innerHTML = panels[ui.tab]();
+    const sub = ['inv', 'pot', 'synth', 'dis'].includes(ui.tab) ? viewBar(viewSource(ui.tab)) : '';
+    $('panel').innerHTML = sub + panels[ui.tab]();
   }
 
   // ───────── 이벤트 ─────────
@@ -348,6 +352,7 @@
 
   $('panel').addEventListener('change', (e) => {
     const t = e.target;
+    if (t.dataset.viewsel) { ui.view[t.dataset.viewsel] = t.value; return render(); }
     if (t.dataset.auto) { ctx.st.auto[t.dataset.auto] = t.checked; ctx.save(); if (t.dataset.auto.startsWith('notify') && t.checked) ctx.askNotify(); return render(); }
     if (t.dataset.autov) {
       const k = t.dataset.autov, v = t.value;
