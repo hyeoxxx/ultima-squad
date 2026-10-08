@@ -639,6 +639,7 @@
     if (b.done === 'clear') {
       const rate = b.killed / Math.max(1, secs);
       st.killRate[key] = st.killRate[key] ? st.killRate[key] * 0.6 + rate * 0.4 : rate;
+      st.lastKillRate = rate;
       const first = !isCleared(st, b.mode, b.idx);
       st.cleared[b.mode][b.idx] = true;
       if (first) {
@@ -699,7 +700,8 @@
   function estimateKillRate(st, mode, idx) {
     const r = st.killRate[`${mode}:${idx}`];
     if (r) return r;
-    return (R.mobsPerStage + 1) / 150; // 기본: 150초에 한 스테이지 [추정]
+    // 이 스테이지 기록이 없으면 가장 최근에 잰 처치 속도, 그것도 없으면 150초에 한 스테이지 [추정]
+    return st.lastKillRate || (R.mobsPerStage + 1) / 150;
   }
   function applyOffline(st, now) {
     const away = Math.max(0, (now - st.lastSeen) / 1000);
@@ -711,9 +713,12 @@
     const kills = estimateKillRate(st, base.mode, base.idx) * secs * (R.offlineRatio + bonus(st, 'offline') / 100);
     const before = {};
     for (const c of ownedMercs(st)) before[c] = { lv: st.mercs[c].lv, exp: st.mercs[c].exp };
-    const exp = Math.round(kills * expPerKill(base.mode, base.idx) * expMult(st));
+    // 온라인 한 스테이지 = 일반 60마리 + 스테이지 보스 1마리(경험치 6배, 메소 20배) → 처치당 평균으로 환산
+    const perStage = R.mobsPerStage + 1;
+    const expAvg = (R.mobsPerStage + R.stageBossExp) / perStage, goldAvg = (R.mobsPerStage + R.stageBossGold) / perStage;
+    const exp = Math.round(kills * expPerKill(base.mode, base.idx) * expAvg * expMult(st));
     for (const c of ownedMercs(st)) gainExp(st, c, exp, null);
-    const gold = Math.round(kills * D.goldPerKill(base.mode, base.idx) * goldMult(st));
+    const gold = Math.round(kills * D.goldPerKill(base.mode, base.idx) * goldAvg * goldMult(st));
     st.gold += gold;
     res.gold = gold; res.exp = exp; res.kills = Math.round(kills);
     for (const c of ownedMercs(st)) res.ups[c] = { from: before[c].lv, to: st.mercs[c].lv, fromPct: before[c].exp / expNeed(before[c].lv), toPct: st.mercs[c].lv >= D.MAX_LEVEL ? 1 : st.mercs[c].exp / expNeed(st.mercs[c].lv) };
