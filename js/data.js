@@ -51,7 +51,7 @@
     // 궁수
     arrow_blow: { cls: 'arch', name: '애로우 블로우', lv: 1, type: 'basic', targets: 2, pct: 170, hits: 1, icon: '🏹', desc: '최대 2명의 적을 170% 데미지로 공격하는 화살 발사' },
     charged_arrow: { cls: 'arch', name: '차지드 애로우', lv: 2, type: 'active', targets: 6, pct: 700, hits: 1, cd: 6, icon: '➶', fx: 'beam', color: '#86efac', desc: '최대 6명의 적을 700%의 데미지로 공격' },
-    storm_arrow: { cls: 'arch', name: '폭풍의 시', lv: 15, type: 'basic', targets: 1, pct: 65, hits: 4, bossPct: 1000, icon: '🌪️', desc: '발당 65% 데미지로 공격. 각 지역 10 스테이지 보스 공격 시 1000% 데미지. 장착 시 기본 공격 대신 사용' },
+    storm_arrow: { cls: 'arch', name: '폭풍의 시', lv: 15, type: 'basic', targets: 1, pct: 65, hits: 1, bossPct: 1000, rapid: true, icon: '🌪️', desc: '화살을 빠르게 연사하는 속사기. 발당 65% 데미지, 각 지역 10 스테이지 보스에게는 1000% 데미지. 다른 스킬이 재사용 대기 중일 때 기본 공격 대신 사용' },
     vortex_sphere: { cls: 'arch', name: '볼텍스 스피어', lv: 20, type: 'active', targets: 6, pct: 160, hits: 6, cd: 6, spread: 3, icon: '🌀', fx: 'vortex', color: '#5eead4', desc: '일정 간격마다 최대 6명의 적을 160%의 데미지로 6번 공격하는 볼텍스 스피어 생성' },
     soul_contract: { cls: 'arch', name: '소울 컨트랙트', lv: 31, type: 'buff', cd: 30, dur: 15, icon: '📜', desc: '15초 동안 데미지 50% 증가' },
     elemental_ghost: { cls: 'arch', name: '엘리멘탈 고스트', lv: 37, type: 'buff', cd: 30, dur: 15, icon: '👻', desc: '15초 동안 공격 스킬의 잔상이 최대 3번 추가 공격. 잔상 최종 데미지 30% (폭풍의 시 15%)' },

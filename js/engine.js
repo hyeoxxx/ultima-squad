@@ -397,7 +397,11 @@
     // 기본 공격 (폭풍의 시 장착 시 대체)
     const basic = slots.includes('storm_arrow') ? D.SKILLS.storm_arrow : D.SKILLS[D.BASIC[m.cls]];
     useAttack(st, b, m, basic);
+    // 폭풍의 시: 공격 속도 간격이 아니라 짧은 간격으로 계속 연사하는 속사기 [연사 간격 추정: 원작 폭풍의 시 기준 약 0.1초]
+    if (basic.rapid) return stormInterval(m.s.speed);
+    return 0;
   }
+  const stormInterval = (speed) => 0.09 + 0.01 * (8 - Math.min(8, speed));
 
   function damageMerc(st, b, m, raw, src) {
     if (!m.alive) return;
@@ -595,7 +599,8 @@
       }
       if (t >= m.next) {
         m.next = t + m.s.interval;
-        mercAct(st, b, m);
+        const iv = mercAct(st, b, m);
+        if (iv) m.next = t + iv;
       }
     }
     if (b.done) return;
