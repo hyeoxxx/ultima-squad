@@ -479,8 +479,19 @@
   const BOX_ITEMS = { rare: 1, epic: 2, unique: 3, legendary: 5 };
   const BOX_CUBES = { rare: 1, epic: 2, unique: 4, legendary: 8 };
   const today = (now) => { const d = new Date(now); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+  // 하루 BOX_PER_DAY 회: 날짜가 바뀌면 다시 가득 찬다
+  const BOX_PER_DAY = 3;
+  function boxLeft(st, now) {
+    const d = today(now);
+    if (st.boxChargeDate !== d) {
+      // 예전 세이브(하루 1회)에서 오늘 이미 썼으면 1회 사용한 것으로 친다
+      st.boxCharges = BOX_PER_DAY - (st.boxDate === d && st.boxCharges == null ? 1 : 0);
+      st.boxChargeDate = d;
+    }
+    return st.boxCharges;
+  }
   function boxStatus(st, b, now) {
-    if (st.boxDate === today(now)) return { ok: false, why: '오늘은 이미 소환했어요 (자정 초기화)' };
+    if (boxLeft(st, now) <= 0) return { ok: false, why: `오늘 소환 횟수(${BOX_PER_DAY}회)를 다 썼어요 (자정 충전)` };
     if (!b || b.done) return { ok: false, why: '전투 중에만 소환할 수 있어요' };
     if (b.info.isBoss) return { ok: false, why: '보스 스테이지에서는 소환할 수 없어요' };
     if (b.bossSpawned || b.spawned >= R.mobsPerStage) return { ok: false, why: '보스 등장 직전에는 소환할 수 없어요' };
@@ -491,6 +502,7 @@
   function summonBox(st, b, now) {
     const s = boxStatus(st, b, now);
     if (!s.ok) return s;
+    st.boxCharges = boxLeft(st, now) - 1;
     st.boxDate = today(now);
     const hp = b.mon.hp * 40;
     b.box = { id: b.nextMonId++, kind: 'box', hp, maxHp: hp, atk: 0, x: POS.war + 110, // 모든 용병(전사 근접 포함) 사거리 안
@@ -513,7 +525,7 @@
     b.box = null;
     st.stats.boxes++;
     const g = box.grade, gm = BOX_MULT[g];
-    const exp = Math.round(expPerKill(b.mode, b.idx) * 2700 * gm * expMult(st));
+    const exp = Math.round(expPerKill(b.mode, b.idx) * 5400 * gm * expMult(st)); // 하루 3회로 늘리면서 경험치도 2배
     for (const c of Object.keys(b.mercs)) gainExp(st, c, exp, b.events);
     const range = D.dropRange(b.mode, b.idx) || [1, 1];
     let items = 0;
@@ -887,7 +899,7 @@
     mercStats, skillCd, expNeed, expPerKill, monsterStats, stageInfo, isCleared, chaosUnlocked, ownedMercs,
     makeItem, itemName, invFull, addItem, availableSkills, canEquip, gainExp, frontier, canEnter,
     applyOffline, offlineBase, boxStatus, summonBox, equipItem, unequipItem, setSkill, recruit, buyUtil, utilNext,
-    expandInv, buyCubes, cubeRoll, cubeApply, findItem, synthesize, autoSynthGroup, dismantle, convertChaosCoins, buyCoinUp, bonus, defaultAuto, stashBox,
+    expandInv, buyCubes, cubeRoll, cubeApply, findItem, synthesize, autoSynthGroup, dismantle, convertChaosCoins, buyCoinUp, bonus, defaultAuto, stashBox, boxLeft, BOX_PER_DAY,
     skillSlots, fmt, today,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

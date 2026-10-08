@@ -458,3 +458,7 @@ h3 { color: #fff; }
 .pm-row.down { filter: grayscale(1); opacity: .7; }
 body.pip .party { top: 40px; width: 180px; }
 @media (max-width: 640px) { .party { width: 150px; top: 36px; } .pm-face { width: 28px; height: 28px; } .pm-hp em { display: none; } }
+
+.ov-btn.box { position: absolute; }
+.ov-btn.box::after { content: attr(data-n); position: absolute; right: -6px; bottom: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px;
+  background: linear-gradient(180deg, #ffe8a3, #f5a011); color: #4a2600; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; border: 1px solid #8a4b00; }

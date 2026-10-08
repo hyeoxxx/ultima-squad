@@ -248,7 +248,9 @@
     $('btnBag').classList.toggle('full', US.invFull(st));
     $('bagNew').hidden = !st.inventory.some((x) => x.isNew);
     const bs = US.boxStatus(st, battle, Date.now());
-    $('btnBox').classList.toggle('used', st.boxDate === US.today(Date.now()));
+    const boxN = US.boxLeft(st, Date.now());
+    $('btnBox').classList.toggle('used', boxN <= 0);
+    $('btnBox').dataset.n = boxN;
     $('btnBox').title = bs.ok ? '에스페시아 상자 소환 (하루 1회)' : bs.why;
     // 포탈: 반복 중이고 다음 스테이지로 갈 수 있을 때
     const next = st.stage + 1;
@@ -265,7 +267,7 @@
     if (!el || !pipWin) return;
     const fresh = st.inventory.filter((x) => x.isNew).length;
     const full = US.invFull(st);
-    const box = st.boxDate === US.today(Date.now());
+    const box = US.boxLeft(st, Date.now()) <= 0;
     const mercs = US.ownedMercs(st).map((c) => {
       const m = st.mercs[c];
       const pct = m.lv >= D.MAX_LEVEL ? 100 : m.exp / US.expNeed(m.lv) * 100;
@@ -275,7 +277,7 @@
     const html = `<div class="po-res">
         <span class="${full ? 'bad' : ''}"><img src="assets/icons/bag.png"> ${st.inventory.length}/${st.invSize}${fresh ? ` <em>+${fresh}</em>` : ''}</span>
         <span><img src="assets/icons/meso.png"> ${US.fmt(st.gold)}</span><span><img src="assets/icons/cube.png"> ${st.cubes}</span>
-        <span class="${box ? 'dim' : 'ok'}"><img src="assets/icons/box.png"> ${box ? '사용함' : '가능'}</span>
+        <span class="${box ? 'dim' : 'ok'}"><img src="assets/icons/box.png"> ${US.boxLeft(st, Date.now())}/${US.BOX_PER_DAY}</span>
       </div>
       ${drops ? `<div class="po-drops">${drops}</div>` : ''}`;
     if (html !== lastPipInfo) { el.innerHTML = html; lastPipInfo = html; }
@@ -391,8 +393,8 @@
     if (!battle) return;
     // 상단 왼쪽: 자원
     const fresh = st.inventory.filter((i) => i.isNew).length;
-    const box = st.boxDate === US.today(Date.now());
-    const parts = [['bag', `${st.inventory.length}/${st.invSize}${fresh ? ` +${fresh}` : ''}`, US.invFull(st) ? '#fca5a5' : '#fff'], ['meso', US.fmt(st.gold), '#fff'], ['cube', String(st.cubes), '#fff'], ['box', box ? '사용함' : '가능', box ? '#cbd5e1' : '#86efac']];
+    const box = US.boxLeft(st, Date.now()) <= 0;
+    const parts = [['bag', `${st.inventory.length}/${st.invSize}${fresh ? ` +${fresh}` : ''}`, US.invFull(st) ? '#fca5a5' : '#fff'], ['meso', US.fmt(st.gold), '#fff'], ['cube', String(st.cubes), '#fff'], ['box', `${US.boxLeft(st, Date.now())}/${US.BOX_PER_DAY}`, box ? '#cbd5e1' : '#86efac']];
     x.font = '700 15px "Malgun Gothic",sans-serif';
     const widths = parts.map(([, t]) => x.measureText(t).width + 24);
     hudBox(x, 12, 10, widths.reduce((a, b) => a + b, 0) + 14 * parts.length + 6, 30);

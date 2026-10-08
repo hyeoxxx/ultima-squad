@@ -356,7 +356,7 @@
       <tr><td>시작한 지</td><td>${days}일</td></tr><tr><td>처치한 몬스터</td><td>${fmt(st.stats.kills)}</td></tr>
       <tr><td>처치한 보스</td><td>${fmt(st.stats.bossKills)}</td></tr><tr><td>에스페시아 상자</td><td>${st.stats.boxes}</td></tr></table>
       <hr><h3>${MI('box')} 에스페시아 상자 1회 초기화</h3>
-      <p class="small muted">상자가 너무 멀리 생겨서 못 깨던 버그 보상이에요. 오늘 소환 기록을 지워서 한 번 더 소환할 수 있게 해요. 세이브당 1번만 쓸 수 있어요.</p>
+      <p class="small muted">상자가 너무 멀리 생겨서 못 깨던 버그 보상이에요. 오늘 소환 횟수를 1회 돌려줘요. 세이브당 1번만 쓸 수 있어요.</p>
       <button class="btn ${st.boxResetUsed ? '' : 'primary'}" data-act="boxReset" ${st.boxResetUsed ? 'disabled' : ''}>${st.boxResetUsed ? '이미 사용했어요' : '상자 소환 1회 초기화'}</button>
       <hr><h3>세이브</h3><p class="small muted">진행 기록은 이 브라우저(localStorage)에 저장돼요. 다른 기기로 옮기려면 내보내기 코드를 복사해서 불러오기에 붙여넣으세요.</p>
       <div class="row"><button class="btn" data-act="export">내보내기</button><button class="btn" data-act="import">불러오기</button><button class="btn danger" data-act="reset">처음부터 다시</button></div>
@@ -475,8 +475,8 @@
       case 'tutorial': ctx.startTutorial(); return;
       case 'boxReset':
         if (st.boxResetUsed) break;
-        if (st.boxDate !== US.today(Date.now())) { toast('오늘은 아직 상자를 소환하지 않았어요. 소환한 뒤에 쓰세요'); break; }
-        st.boxDate = null; st.boxResetUsed = true; ctx.save(); toast('상자를 다시 소환할 수 있어요!'); break;
+        if (US.boxLeft(st, Date.now()) >= US.BOX_PER_DAY) { toast('오늘 소환 횟수가 이미 가득 차 있어요. 쓴 뒤에 사용하세요'); break; }
+        st.boxCharges++; st.boxResetUsed = true; ctx.save(); toast('상자 소환 횟수 +1!'); break;
       case 'unequipSel': { const it = US.findItem(st, ui.sel); if (it && res(US.unequipItem(st, it.cls, it.slot), '장착 해제')) { b && US.refreshMercStats(st, b); } break; }
       case 'equip': if (ui.sel) { const it = US.findItem(st, ui.sel); if (res(US.equipItem(st, ui.sel), `${D.CLASS_NAME[it.cls]}에게 장착했어요`)) { b && US.refreshMercStats(st, b); } } break;
       case 'lock': { const it = US.findItem(st, ui.sel); if (it) { it.lock = !it.lock; ctx.save(); } break; }
