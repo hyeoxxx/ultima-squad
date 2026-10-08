@@ -184,7 +184,7 @@
       save();
       dt = 0;
     }
-    acc += dt;
+    acc += dt * (st.speed === 2 ? 2 : 1); // 2배속
     const run = Math.floor(acc / US.DT) * US.DT;
     if (run > 0) { acc -= run; simulate(run, (!document.hidden || !!pipWin || !!vpip) && run < 1); }
   }
@@ -469,6 +469,8 @@
   $('btnRepeat').addEventListener('click', () => { st.repeat = !st.repeat; st.repeatReason = null; save(); UI.markDirty(); });
   $('btnBag').addEventListener('click', () => { UI.ui.tab = 'inv'; UI.render(); $('manage').scrollIntoView({ behavior: 'smooth' }); });
   $('vol').addEventListener('input', (e) => { st.audio.master = +e.target.value; syncVolume(); save(); UI.markDirty(); });
+  $('btnSpeed').addEventListener('click', () => { st.speed = st.speed === 2 ? 1 : 2; $('btnSpeed').classList.toggle('on', st.speed === 2); save(); UI.toast(st.speed === 2 ? '2배속 ON' : '2배속 OFF'); });
+  $('btnSpeed').classList.toggle('on', st.speed === 2);
   $('btnBgm').addEventListener('click', () => { st.audio.bgmOn = !st.audio.bgmOn; syncVolume(); save(); UI.markDirty(); });
   syncVolume();
 
