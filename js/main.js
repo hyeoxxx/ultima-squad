@@ -35,6 +35,8 @@
     // 스테이지 이동 시 상자 증발 버그 보상 (세이브당 1회 더)
     if (!s.boxBugComp2 && s.boxDate === US.today(Date.now()) && !s.pendingBox) s.boxDate = null;
     s.boxBugComp2 = true;
+    // 하루 3회 전환 보상: 오늘 남은 상자 횟수를 3회로 채운다 (세이브당 1회)
+    if (!s.boxTopup3) { s.boxCharges = 3; s.boxChargeDate = US.today(Date.now()); s.boxTopup3 = true; }
     return s;
   }
   function save() {
