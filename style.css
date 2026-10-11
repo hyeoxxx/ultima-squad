@@ -462,3 +462,5 @@ body.pip .party { top: 40px; width: 180px; }
 .ov-btn.box { position: absolute; }
 .ov-btn.box::after { content: attr(data-n); position: absolute; right: -6px; bottom: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px;
   background: linear-gradient(180deg, #ffe8a3, #f5a011); color: #4a2600; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; border: 1px solid #8a4b00; }
+
+.auto-grid .cube-row b { display: inline-block; min-width: 46px; color: #ffd77a; }

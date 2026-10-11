@@ -300,11 +300,13 @@
         → 그래도 차 있으면 ${sel('disMax', { 0: '분해 안 함', 1: '1단계 이하 분해', 2: '2단계 이하 분해', 3: '3단계 이하 분해', 4: '4단계 이하 분해', 5: '5단계 이하 분해', 6: '6단계 이하 분해' })}
         <div class="small muted">잠근 장비, 착용 중인 장비, 지금보다 좋은 장비, 나중에 낄 장비는 건드리지 않아요.</div></div>
       ${chk('cube', '자동 큐브', '착용 장비 잠재를 목표가 나올 때까지')}
-      <div class="sub">무기 ${sel('cubeWeapon', AU.CUBE_WEAPON)} · 방어구 ${sel('cubeArmor', AU.CUBE_ARMOR)} 옵션 ${sel('cubeLines', { 1: '1줄 이상', 2: '2줄 이상', 3: '3줄' })} · 큐브 ${num('cubeKeep', 0, 9999)}개는 남겨두기</div>
+      <div class="sub">${US.ownedMercs(st).map((c) => { const g = AU.cubeCfg(st, c); const cs = (f, opts) => `<select data-cubeby="${c}.${f}">${Object.entries(opts).map(([v, n]) => `<option value="${v}" ${String(g[f]) === v ? 'selected' : ''}>${n}</option>`).join('')}</select>`;
+          return `<div class="cube-row"><b>${D.CLASS_NAME[c]}</b> 무기 ${cs('weapon', AU.CUBE_WEAPON)} · 방어구 ${cs('armor', AU.CUBE_ARMOR)} · ${cs('lines', { 1: '1줄 이상', 2: '2줄 이상', 3: '3줄' })}</div>`; }).join('')}
+        <div>큐브 ${num('cubeKeep', 0, 9999)}개는 남겨두기 <span class="small muted">· 위 용병부터 차례로 돌려요</span></div></div>
       <h3>진행</h3>
       ${chk('retry', '자동 재도전', '일반 모드를 다 깨면 카오스로도 넘어가요')}
       <div class="sub">실패해서 아래 스테이지를 반복 중이면 ${num('retryMin', 1, 120)}분마다 다음 스테이지 재도전</div>
-      ${chk('box', '에스페시아 상자 자동 소환', '하루 1회, 가능한 첫 타이밍에')}
+      ${chk('box', '에스페시아 상자 자동 소환', '하루 3회, 가능한 첫 타이밍에')}
       ${chk('skills', '스킬 자동 배치', '레벨업·보스 스테이지에 맞춰 추천 조합으로 (수동 배치를 덮어써요)')}
       ${chk('recruit', '용병 자동 영입', '조건과 메소가 되면 바로')}
       ${chk('util', '유틸리티 자동 구매', '')}
@@ -396,6 +398,11 @@
     if (t.name === 'pipMode') { ctx.setPipMode(t.value); return; }
     if (t.dataset.viewsel) { ui.view[t.dataset.viewsel] = t.value; return render(); }
     if (t.dataset.auto) { ctx.st.auto[t.dataset.auto] = t.checked; ctx.save(); if (t.dataset.auto.startsWith('notify') && t.checked) ctx.askNotify(); return render(); }
+    if (t.dataset.cubeby) {
+      const [c, f] = t.dataset.cubeby.split('.');
+      G.USAuto.cubeCfg(ctx.st, c)[f] = f === 'lines' ? +t.value : t.value;
+      ctx.save(); return render();
+    }
     if (t.dataset.autov) {
       const k = t.dataset.autov, v = t.value;
       ctx.st.auto[k] = ['cubeWeapon', 'cubeArmor'].includes(k) ? v : Math.max(+t.min || 0, Math.min(+t.max || 1e9, +v || 0));

@@ -106,24 +106,33 @@
   }
 
   // ───────── 큐브 ─────────
-  const CUBE_WEAPON = { pct: '공/마 %', flat: '공/마 +', critdmg: '크리티컬 데미지', cdr: '재사용 감소' };
-  const CUBE_ARMOR = { def: '방어력', hp: '최대 HP', atk: '공/마 +' };
+  const CUBE_WEAPON = { none: '안 돌림', pct: '공/마 %', flat: '공/마 +', crit: '크리티컬 확률', critdmg: '크리티컬 데미지', speed: '공격 속도', cdr: '재사용 감소' };
+  const CUBE_ARMOR = { none: '안 돌림', def: '방어력', hp: '최대 HP', atk: '공/마 +', crit: '크리티컬 확률' };
+  // 용병별 큐브 목표. 없으면 예전 공통 설정을 그대로 물려받는다
+  function cubeCfg(st, c) {
+    const A = st.auto;
+    if (!A.cubeBy) A.cubeBy = {};
+    if (!A.cubeBy[c]) A.cubeBy[c] = { weapon: A.cubeWeapon || 'pct', armor: A.cubeArmor || 'def', lines: A.cubeLines || 2 };
+    return A.cubeBy[c];
+  }
   function goodLines(it, cls, target) {
     const magic = cls === 'mage';
     const keys = {
       pct: [magic ? 'matkp' : 'atkp'], flat: [magic ? 'matk' : 'atk'], critdmg: ['critdmg'], cdr: ['cdr'],
-      def: ['def'], hp: ['hp'], atk: [magic ? 'matk' : 'atk'],
+      def: ['def'], hp: ['hp'], atk: [magic ? 'matk' : 'atk'], crit: ['crit'], speed: ['speed'],
     }[target] || [];
     return it.pot.filter((p) => keys.includes(p.k)).length;
   }
   function autoCube(st) {
     const A = st.auto, done = [];
     for (const c of US.ownedMercs(st)) {
+      const cfg = cubeCfg(st, c);
       for (const slot of D.SLOTS) {
         const it = st.mercs[c].equip[slot];
         if (!it || it.tier < 2) continue;
-        const target = slot === 'weapon' ? A.cubeWeapon : A.cubeArmor;
-        const need = Math.min(A.cubeLines, D.TIERS[it.tier].lines);
+        const target = slot === 'weapon' ? cfg.weapon : cfg.armor;
+        if (target === 'none') continue;
+        const need = Math.min(cfg.lines, D.TIERS[it.tier].lines);
         let have = goodLines(it, c, target);
         let rolls = 0;
         while (have < need && st.cubes > A.cubeKeep && rolls < 40) {
@@ -228,5 +237,5 @@
     return Math.max(0, Math.round((p1 - p0) * CP_SCALE));
   }
 
-  G.USAuto = { mercPower, squadPower, itemPower, power, powerWith, upgradeRatio, isUpgrade, canWear, between, during, recommendSkills, CUBE_WEAPON, CUBE_ARMOR };
+  G.USAuto = { mercPower, squadPower, itemPower, power, powerWith, upgradeRatio, isUpgrade, canWear, between, during, recommendSkills, cubeCfg, CUBE_WEAPON, CUBE_ARMOR };
 })(typeof window !== 'undefined' ? window : globalThis);
