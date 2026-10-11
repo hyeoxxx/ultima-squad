@@ -464,3 +464,5 @@ body.pip .party { top: 40px; width: 180px; }
   background: linear-gradient(180deg, #ffe8a3, #f5a011); color: #4a2600; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; border: 1px solid #8a4b00; }
 
 .auto-grid .cube-row b { display: inline-block; min-width: 46px; color: #ffd77a; }
+
+kbd { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 4px; font: 700 10.5px/16px "Malgun Gothic", sans-serif; background: rgba(0, 0, 0, .28); border: 1px solid rgba(255, 255, 255, .25); color: inherit; opacity: .85; vertical-align: 1px; }

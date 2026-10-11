@@ -175,11 +175,12 @@
       if (ui.cube && ui.cube.id === it.id) {
         const fake = Object.assign({}, it, { pot: ui.cube.after });
         right += `<hr><div class="row" style="align-items:stretch"><div class="pot" style="flex:1"><b class="small">BEFORE</b>${potLines(it)}</div><div class="pot" style="flex:1"><b class="small">AFTER</b>${potLines(fake)}</div></div>
-          <div class="row"><button class="btn" data-act="cubeKeep">BEFORE 유지</button><button class="btn primary" data-act="cubeApply">AFTER 적용</button></div>`;
-      } else right += `<button class="btn primary" data-act="cube" ${st.cubes > 0 ? '' : 'disabled'}>${MI('cube')} 훈련용 큐브 사용 (보유 ${st.cubes})</button>`;
+          <div class="row"><button class="btn primary" data-act="cubeAgain" ${st.cubes > 0 ? '' : 'disabled'}>${MI('cube')} 한 번 더 <kbd>Space</kbd></button><button class="btn" data-act="cubeApplyAgain" ${st.cubes > 0 ? '' : 'disabled'}>AFTER 적용 + 한 번 더 <kbd>A</kbd></button></div>
+          <div class="row"><button class="btn sm" data-act="cubeKeep">BEFORE 유지하고 끝 <kbd>Esc</kbd></button><button class="btn sm" data-act="cubeApply">AFTER 적용하고 끝 <kbd>Enter</kbd></button><span class="small muted">남은 큐브 ${st.cubes}개</span></div>`;
+      } else right += `<button class="btn primary" data-act="cube" ${st.cubes > 0 ? '' : 'disabled'}>${MI('cube')} 훈련용 큐브 사용 (보유 ${st.cubes}) <kbd>Space</kbd></button>`;
     }
     return `<div class="inv-layout"><div>
-      <div class="row" style="margin-bottom:8px"><b>훈련용 큐브 ${st.cubes}개</b><button class="btn sm" data-act="buyCube" data-n="1">1개 구매 (2만 메소)</button><button class="btn sm" data-act="buyCube" data-n="10">10개 구매 (20만 메소)</button></div>
+      <div class="row" style="margin-bottom:8px"><b>훈련용 큐브 ${st.cubes}개</b><button class="btn sm" data-act="buyCube" data-n="1">1개 구매 (2만 메소)</button><button class="btn sm" data-act="buyCube" data-n="10">10개 구매 (20만 메소)</button><button class="btn sm" data-act="buyCube" data-n="100">100개 구매 (200만 메소)</button></div>
       <p class="small muted">재설정해도 등급은 오르지 않고, 결과 중 전/후를 골라 적용할 수 있어요. 같은 잠재가 다시 나올 수도 있어요.</p>
       <h4 class="sec">착용 중</h4>
       <div class="grid">${worn.map((x) => itemCell(x, 'eq' + (x.tier < 2 ? ' dim' : '') + (ui.potItem === x.id ? ' sel' : ''))).join('') || '<p class="muted small">착용 중인 장비가 없어요.</p>'}</div>
@@ -392,6 +393,17 @@
     const t = e.target;
     if (t.dataset.audio && t.type === 'range') { ctx.setAudio(t.dataset.audio, +t.value); t.nextElementSibling.textContent = t.value; }
   });
+  // 잠재능력 탭 단축키: Space 다시 돌리기 · A 적용 후 다시 · Enter 적용 · Esc 유지
+  document.addEventListener('keydown', (e) => {
+    if (ui.tab !== 'pot' || e.ctrlKey || e.altKey || e.metaKey || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+    const act = ui.cube
+      ? { ' ': 'cubeAgain', a: 'cubeApplyAgain', A: 'cubeApplyAgain', Enter: 'cubeApply', Escape: 'cubeKeep' }[e.key]
+      : (e.key === ' ' ? 'cube' : null);
+    const btn = act && $('panel').querySelector(`[data-act="${act}"]`);
+    if (!btn) return;
+    e.preventDefault();
+    if (!btn.disabled) btn.click();
+  });
   $('panel').addEventListener('change', (e) => {
     const t = e.target;
     if (t.dataset.audio) { ctx.setAudio(t.dataset.audio, t.type === 'checkbox' ? t.checked : +t.value); return render(); }
@@ -495,6 +507,15 @@
       case 'cube': { const r = US.cubeRoll(st, ui.potItem); if (r.ok) ui.cube = { id: ui.potItem, after: r.after }; else toast(r.why); ctx.save(); break; }
       case 'cubeApply': if (ui.cube) { US.cubeApply(st, ui.cube.id, ui.cube.after); b && US.refreshMercStats(st, b); ui.cube = null; toast('AFTER 잠재능력을 적용했어요'); ctx.save(); } break;
       case 'cubeKeep': ui.cube = null; break;
+      // 결과 화면에서 바로 다시 돌리기 (BEFORE 유지 / AFTER 적용)
+      case 'cubeAgain': case 'cubeApplyAgain': {
+        if (!ui.cube) break;
+        if (st.cubes <= 0) { toast('훈련용 큐브가 없어요'); break; }
+        if (t.dataset.act === 'cubeApplyAgain') { US.cubeApply(st, ui.cube.id, ui.cube.after); b && US.refreshMercStats(st, b); }
+        const r = US.cubeRoll(st, ui.cube.id);
+        if (r.ok) ui.cube = { id: ui.cube.id, after: r.after }; else { ui.cube = null; toast(r.why); }
+        ctx.save(); break;
+      }
       case 'synthAuto': { const g = US.autoSynthGroup(st); if (g) ui.synth = new Set(g); else toast('같은 단계 장비가 9개 이상 없어요'); break; }
       case 'synthClear': ui.synth.clear(); break;
       case 'synth': { const r = US.synthesize(st, [...ui.synth]); if (res(r)) { ui.synth.clear(); synthResult([r.item]); } break; }
